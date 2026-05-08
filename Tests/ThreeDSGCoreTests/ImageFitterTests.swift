@@ -32,6 +32,38 @@ struct ImageFitterTests {
         #expect(alpha(atX: 50, y: 5, in: rep) > 200)
     }
 
+    @Test
+    func trimsTransparentEdges() throws {
+        let source = try makeTransparentImage(
+            width: 120,
+            height: 80,
+            fillRect: CGRect(x: 15, y: 10, width: 70, height: 45)
+        )
+
+        let output = try ImageFitter.trimmedTransparentImage(source)
+
+        #expect(output.width == 70)
+        #expect(output.height == 45)
+    }
+
+    @Test
+    func fitsTrimmedImageWithinMaxSizeWithoutPadding() throws {
+        let source = try makeTransparentImage(
+            width: 120,
+            height: 80,
+            fillRect: CGRect(x: 10, y: 20, width: 100, height: 40)
+        )
+
+        let output = try ImageFitter.fittedTrimmedImage(source, targetSize: PixelSize(width: 100, height: 100))
+        let rep = try bitmap(output)
+
+        #expect(rep.pixelsWide == 100)
+        #expect(rep.pixelsHigh == 40)
+        #expect(alpha(atX: 50, y: 20, in: rep) > 200)
+        #expect(alpha(atX: 50, y: 0, in: rep) > 200)
+        #expect(alpha(atX: 50, y: 39, in: rep) > 200)
+    }
+
     private func makeImage(width: Int, height: Int, color: NSColor) throws -> CGImage {
         guard let context = CGContext(
             data: nil,
@@ -46,6 +78,27 @@ struct ImageFitterTests {
         }
         context.setFillColor(color.cgColor)
         context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        guard let image = context.makeImage() else {
+            throw ThreeDSGError.renderFailed("test image failed")
+        }
+        return image
+    }
+
+    private func makeTransparentImage(width: Int, height: Int, fillRect: CGRect) throws -> CGImage {
+        guard let context = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            throw ThreeDSGError.renderFailed("test image context failed")
+        }
+        context.clear(CGRect(x: 0, y: 0, width: width, height: height))
+        context.setFillColor(NSColor.red.cgColor)
+        context.fill(fillRect)
         guard let image = context.makeImage() else {
             throw ThreeDSGError.renderFailed("test image failed")
         }

@@ -78,7 +78,7 @@ struct RenderIntegrationTests {
             #expect(FileManager.default.fileExists(atPath: result.pngURL.path))
             let sidecarUSDZ = result.pngURL.deletingPathExtension().appendingPathExtension("usdz")
             #expect(!FileManager.default.fileExists(atPath: sidecarUSDZ.path))
-            try assertPNG(result.pngURL, hasSize: renderCase.outputSize)
+            try assertPNG(result.pngURL, fitsWithin: renderCase.outputSize)
         }
 
         let afterHashes = try assetHashes(in: assetsDirectory)
@@ -142,12 +142,13 @@ struct RenderIntegrationTests {
         try ImageFitter.pngData(from: nsImage).write(to: url)
     }
 
-    private func assertPNG(_ url: URL, hasSize size: Dimensions) throws {
+    private func assertPNG(_ url: URL, fitsWithin size: Dimensions) throws {
         let data = try Data(contentsOf: url)
         guard let rep = NSBitmapImageRep(data: data) else {
             throw ThreeDSGError.imageLoadFailed(url)
         }
-        #expect(rep.pixelsWide == size.width)
-        #expect(rep.pixelsHigh == size.height)
+        #expect(rep.pixelsWide <= size.width)
+        #expect(rep.pixelsHigh <= size.height)
+        #expect(rep.pixelsWide == size.width || rep.pixelsHigh == size.height)
     }
 }

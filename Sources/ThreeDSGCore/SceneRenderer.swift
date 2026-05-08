@@ -4,7 +4,17 @@ import SceneKit
 import simd
 
 public struct DeviceRenderer: Sendable {
-    public init() {}
+    private static let defaultInternalRenderSize = try! Dimensions(width: 8000, height: 8000)
+
+    private let internalRenderSize: Dimensions
+
+    public init() {
+        self.internalRenderSize = Self.defaultInternalRenderSize
+    }
+
+    init(internalRenderSize: Dimensions) {
+        self.internalRenderSize = internalRenderSize
+    }
 
     public func render(_ options: RenderOptions) throws -> RenderResult {
         try validateInputs(options)
@@ -44,10 +54,15 @@ public struct DeviceRenderer: Sendable {
         try orient(wrapper: wrapper, screenNode: selection.screenNode, options: options)
         center(wrapper)
 
-        let camera = try addCamera(to: workingScene, framing: wrapper, outputSize: options.outputSize)
+        let camera = try addCamera(to: workingScene, framing: wrapper, outputSize: internalRenderSize)
         addLights(to: workingScene, camera: camera)
 
-        let png = try renderPNG(scene: workingScene, camera: camera, size: options.outputSize)
+        let png = try renderPNG(
+            scene: workingScene,
+            camera: camera,
+            renderSize: internalRenderSize,
+            outputSize: options.outputSize
+        )
         try fileManager.createDirectory(
             at: options.outputPNGURL.deletingLastPathComponent(),
             withIntermediateDirectories: true
@@ -403,7 +418,12 @@ public struct DeviceRenderer: Sendable {
         scene.rootNode.addChildNode(keyNode)
     }
 
-    private func renderPNG(scene: SCNScene, camera: SCNNode, size: Dimensions) throws -> Data {
+    private func renderPNG(
+        scene: SCNScene,
+        camera: SCNNode,
+        renderSize: Dimensions,
+        outputSize: Dimensions
+    ) throws -> Data {
         let renderer = SCNRenderer(device: nil, options: nil)
         renderer.scene = scene
         renderer.pointOfView = camera
@@ -411,10 +431,17 @@ public struct DeviceRenderer: Sendable {
 
         let image = renderer.snapshot(
             atTime: 0,
-            with: CGSize(width: size.width, height: size.height),
+            with: CGSize(width: renderSize.width, height: renderSize.height),
             antialiasingMode: .multisampling4X
         )
-        return try ImageFitter.pngData(from: image)
+        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            throw ThreeDSGError.renderFailed("could not read rendered image")
+        }
+        let finalImage = try ImageFitter.fittedTrimmedImage(
+            cgImage,
+            targetSize: PixelSize(width: outputSize.width, height: outputSize.height)
+        )
+        return try ImageFitter.pngData(from: finalImage)
     }
 
     private func screenNormal(_ node: SCNNode) throws -> SIMD3<Float> {

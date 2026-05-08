@@ -117,6 +117,7 @@ public struct CommandLineParser: Sendable {
       --orientation portrait|landscape       Defaults to portrait for iPhone and landscape for iPad.
       --color cosmic-orange|deep-blue|silver iPhone only. Default: cosmic-orange.
       --rotation X,Y,Z                       Extra device rotation in degrees. Default: 0,0,0.
+      --size WIDTHxHEIGHT                    Max output dimensions after transparent edge trimming.
       --assets-dir path                      Default: ./Assets.
       --screen-fit cover|contain|stretch     Default: cover for iPhone; stretch for iPad.
       -h, --help                             Show this help.
