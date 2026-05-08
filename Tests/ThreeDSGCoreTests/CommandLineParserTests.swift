@@ -68,11 +68,43 @@ struct CommandLineParserTests {
     }
 
     @Test
-    func rejectsIPadColor() throws {
+    func parsesIPadPro13InchDeviceName() throws {
+        let command = try CommandLineParser.parse([
+            "render",
+            "--device", "ipad-pro-13-inch",
+            "--screen", "screen.png",
+            "--output", "render.png",
+            "--size", "800x600"
+        ], currentDirectory: root)
+
+        guard case .render(let options) = command else {
+            Issue.record("expected render command")
+            return
+        }
+
+        #expect(options.device == .iPad)
+        #expect(options.orientation == .landscape)
+    }
+
+    @Test
+    func rejectsLegacyIPadDeviceName() throws {
         #expect(throws: ThreeDSGError.self) {
             try CommandLineParser.parse([
                 "render",
                 "--device", "ipad",
+                "--screen", "screen.png",
+                "--output", "render.png",
+                "--size", "800x600"
+            ], currentDirectory: root)
+        }
+    }
+
+    @Test
+    func rejectsIPadColor() throws {
+        #expect(throws: ThreeDSGError.self) {
+            try CommandLineParser.parse([
+                "render",
+                "--device", "ipad-pro-13-inch",
                 "--color", "silver",
                 "--screen", "screen.png",
                 "--output", "render.png",
@@ -86,7 +118,7 @@ struct CommandLineParserTests {
         #expect(throws: ThreeDSGError.self) {
             try CommandLineParser.parse([
                 "render",
-                "--device", "ipad",
+                "--device", "ipad-pro-13-inch",
                 "--screen", "screen.png",
                 "--output", "render.png",
                 "--size", "800"
@@ -99,7 +131,7 @@ struct CommandLineParserTests {
         #expect(throws: ThreeDSGError.self) {
             try CommandLineParser.parse([
                 "render",
-                "--device", "ipad",
+                "--device", "ipad-pro-13-inch",
                 "--screen", "screen.png",
                 "--output", "render.png",
                 "--size", "800x600",

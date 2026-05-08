@@ -122,7 +122,7 @@ public struct CommandLineParser: Sendable {
 
     public static let usage = """
     Usage:
-      3dsg render --device iphone-17-pro|iphone-17-pro-max|ipad --screen path --output path.png --size WIDTHxHEIGHT [options]
+      3dsg render --device iphone-17-pro|iphone-17-pro-max|ipad-pro-13-inch --screen path --output path.png --size WIDTHxHEIGHT [options]
 
     Options:
       --orientation portrait|landscape       Defaults to portrait for iPhone and landscape for iPad.

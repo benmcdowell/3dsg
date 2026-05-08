@@ -26,7 +26,7 @@ Supported devices:
 
 - `iphone-17-pro`
 - `iphone-17-pro-max`
-- `ipad`
+- `ipad-pro-13-inch`
 
 Useful options:
 

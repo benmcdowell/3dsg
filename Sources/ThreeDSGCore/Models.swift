@@ -3,7 +3,7 @@ import Foundation
 public enum Device: String, CaseIterable, Sendable {
     case iPhone17Pro = "iphone-17-pro"
     case iPhone17ProMax = "iphone-17-pro-max"
-    case iPad = "ipad"
+    case iPad = "ipad-pro-13-inch"
 
     public var isIPhone: Bool {
         switch self {
