@@ -25,9 +25,9 @@ struct CommandLineParserTests {
         #expect(options.orientation == .portrait)
         #expect(options.color == .cosmicOrange)
         #expect(options.screenFit == .cover)
+        #expect(options.screenFitWasSpecified == false)
         let expectedSize = try Dimensions(width: 1200, height: 900)
         #expect(options.outputSize == expectedSize)
-        #expect(options.outputUSDZURL.path == "/tmp/3dsg-tests/out/render.usdz")
     }
 
     @Test
@@ -55,6 +55,7 @@ struct CommandLineParserTests {
         #expect(options.color == .deepBlue)
         #expect(options.rotation == Rotation(x: 12, y: 0, z: -45))
         #expect(options.screenFit == .contain)
+        #expect(options.screenFitWasSpecified == true)
         #expect(options.assetsDirectoryURL.path == "/tmp/assets")
     }
 

@@ -107,10 +107,10 @@ public struct RenderOptions: Equatable, Sendable {
     public var rotation: Rotation
     public var screenURL: URL
     public var outputPNGURL: URL
-    public var outputUSDZURL: URL
     public var outputSize: Dimensions
     public var assetsDirectoryURL: URL
     public var screenFit: ScreenFit
+    public var screenFitWasSpecified: Bool
     public var showKeyboard: Bool
     public var showPencil: Bool
 
@@ -121,10 +121,10 @@ public struct RenderOptions: Equatable, Sendable {
         rotation: Rotation = .zero,
         screenURL: URL,
         outputPNGURL: URL,
-        outputUSDZURL: URL? = nil,
         outputSize: Dimensions,
         assetsDirectoryURL: URL,
         screenFit: ScreenFit = .cover,
+        screenFitWasSpecified: Bool = false,
         showKeyboard: Bool = false,
         showPencil: Bool = false
     ) {
@@ -134,10 +134,10 @@ public struct RenderOptions: Equatable, Sendable {
         self.rotation = rotation
         self.screenURL = screenURL
         self.outputPNGURL = outputPNGURL
-        self.outputUSDZURL = outputUSDZURL ?? outputPNGURL.deletingPathExtension().appendingPathExtension("usdz")
         self.outputSize = outputSize
         self.assetsDirectoryURL = assetsDirectoryURL
         self.screenFit = screenFit
+        self.screenFitWasSpecified = screenFitWasSpecified
         self.showKeyboard = showKeyboard
         self.showPencil = showPencil
     }
@@ -145,7 +145,6 @@ public struct RenderOptions: Equatable, Sendable {
 
 public struct RenderResult: Equatable, Sendable {
     public var pngURL: URL
-    public var usdzURL: URL
 }
 
 public enum ThreeDSGError: Error, LocalizedError {
@@ -159,7 +158,6 @@ public enum ThreeDSGError: Error, LocalizedError {
     case imageLoadFailed(URL)
     case imageWriteFailed(URL)
     case renderFailed(String)
-    case exportFailed(URL)
 
     public var errorDescription: String? {
         switch self {
@@ -179,8 +177,6 @@ public enum ThreeDSGError: Error, LocalizedError {
             "could not load image: \(url.path)"
         case .imageWriteFailed(let url):
             "could not write image: \(url.path)"
-        case .exportFailed(let url):
-            "could not export USDZ: \(url.path)"
         }
     }
 }

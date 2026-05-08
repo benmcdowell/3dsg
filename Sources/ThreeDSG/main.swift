@@ -11,7 +11,6 @@ do {
     case .render(let options):
         let result = try DeviceRenderer().render(options)
         print("PNG:  \(result.pngURL.path)")
-        print("USDZ: \(result.usdzURL.path)")
     }
 } catch let error as ThreeDSGError {
     fputs("error: \(error.localizedDescription)\n", stderr)

@@ -66,7 +66,8 @@ struct RenderIntegrationTests {
         for renderCase in cases {
             let result = try DeviceRenderer().render(renderCase)
             #expect(FileManager.default.fileExists(atPath: result.pngURL.path))
-            #expect(FileManager.default.fileExists(atPath: result.usdzURL.path))
+            let sidecarUSDZ = result.pngURL.deletingPathExtension().appendingPathExtension("usdz")
+            #expect(!FileManager.default.fileExists(atPath: sidecarUSDZ.path))
             try assertPNG(result.pngURL, hasSize: renderCase.outputSize)
         }
 

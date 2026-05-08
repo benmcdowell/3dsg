@@ -30,6 +30,7 @@ public struct CommandLineParser: Sendable {
         var outputSize: Dimensions?
         var assetsDirectoryURL = currentDirectory.appendingPathComponent("Assets")
         var screenFit = ScreenFit.cover
+        var screenFitWasSpecified = false
         var showKeyboard = false
         var showPencil = false
 
@@ -72,6 +73,7 @@ public struct CommandLineParser: Sendable {
                     throw ThreeDSGError.invalidValue("--screen-fit must be cover, contain, or stretch")
                 }
                 screenFit = parsed
+                screenFitWasSpecified = true
             case "--show-keyboard":
                 showKeyboard = true
             case "--show-pencil":
@@ -111,6 +113,7 @@ public struct CommandLineParser: Sendable {
             outputSize: outputSize,
             assetsDirectoryURL: assetsDirectoryURL,
             screenFit: screenFit,
+            screenFitWasSpecified: screenFitWasSpecified,
             showKeyboard: showKeyboard,
             showPencil: showPencil
         )
@@ -126,13 +129,13 @@ public struct CommandLineParser: Sendable {
       --color cosmic-orange|deep-blue|silver iPhone only. Default: cosmic-orange.
       --rotation X,Y,Z                       Extra device rotation in degrees. Default: 0,0,0.
       --assets-dir path                      Default: ./Assets.
-      --screen-fit cover|contain|stretch     Default: cover.
+      --screen-fit cover|contain|stretch     Default: cover for iPhone; stretch for iPad.
       --show-keyboard                        iPad only. Hidden by default.
       --show-pencil                          iPad only. Hidden by default.
       -h, --help                             Show this help.
 
-    Outputs:
-      The requested PNG and a generated USDZ beside it.
+    Output:
+      The requested PNG.
     """
 
     private static func resolvePath(_ value: String, currentDirectory: URL) -> URL {

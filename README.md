@@ -1,7 +1,6 @@
 # 3D Screenshot Generator
 
-Render app screenshots onto Apple iPhone/iPad USDZ assets and export both a flat
-PNG render and a generated USDZ scene.
+Render app screenshots onto Apple iPhone/iPad USDZ assets and export a flat PNG.
 
 ## Build
 
@@ -21,8 +20,7 @@ swift run 3dsg render \
   --size 1200x900
 ```
 
-The tool derives `outputs/render.usdz` from the PNG output path. The original
-files in `Assets/` are loaded read-only and are not modified.
+The original files in `Assets/` are loaded read-only and are not modified.
 
 Supported devices:
 

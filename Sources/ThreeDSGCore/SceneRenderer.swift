@@ -29,11 +29,15 @@ public struct DeviceRenderer: Sendable {
         workingScene.rootNode.addChildNode(wrapper)
 
         let selection = try selectAndMoveDeviceNodes(from: sourceScene, into: wrapper, manifest: manifest, options: options)
-        let screenTexture = try screenTexture(for: selection.screenNode, manifest: manifest, options: options)
-        replaceScreenMaterial(on: selection.screenNode, materialName: manifest.screenMaterialName, texture: screenTexture)
-
         try orient(wrapper: wrapper, screenNode: selection.screenNode, options: options)
         center(wrapper)
+
+        let screenTexture = try screenTexture(for: selection.screenNode, manifest: manifest, options: options)
+        if manifest.usesScreenOverlay {
+            try addScreenOverlay(to: workingScene, screenNode: selection.screenNode, texture: screenTexture, options: options)
+        } else {
+            replaceScreenMaterial(on: selection.screenNode, materialName: manifest.screenMaterialName, texture: screenTexture)
+        }
 
         let camera = try addCamera(to: workingScene, framing: wrapper, outputSize: options.outputSize)
         addLights(to: workingScene, camera: camera)
@@ -49,16 +53,7 @@ public struct DeviceRenderer: Sendable {
             throw ThreeDSGError.imageWriteFailed(options.outputPNGURL)
         }
 
-        try fileManager.createDirectory(
-            at: options.outputUSDZURL.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-        try? fileManager.removeItem(at: options.outputUSDZURL)
-        guard workingScene.write(to: options.outputUSDZURL, options: nil, delegate: nil, progressHandler: nil) else {
-            throw ThreeDSGError.exportFailed(options.outputUSDZURL)
-        }
-
-        return RenderResult(pngURL: options.outputPNGURL, usdzURL: options.outputUSDZURL)
+        return RenderResult(pngURL: options.outputPNGURL)
     }
 
     private func validateInputs(_ options: RenderOptions) throws {
@@ -175,14 +170,24 @@ public struct DeviceRenderer: Sendable {
     }
 
     private func screenTexture(for screenNode: SCNNode, manifest: AssetManifest, options: RenderOptions) throws -> NSImage {
-        let textureSize = try screenTextureSize(for: screenNode, manifest: manifest)
+        let textureSize = try screenTextureSize(for: screenNode, manifest: manifest, options: options)
         let rotate = manifest.nativeScreenOrientation == options.orientation ? 0 : 1
+        let fit = effectiveScreenFit(for: manifest, options: options)
         return try ImageFitter.fittedImage(
             from: options.screenURL,
-            fit: options.screenFit,
+            fit: fit,
             targetSize: textureSize,
             rotateQuarterTurns: rotate
         )
+    }
+
+    private func effectiveScreenFit(for manifest: AssetManifest, options: RenderOptions) -> ScreenFit {
+        if manifest.usesScreenOverlay,
+           !options.screenFitWasSpecified,
+           options.screenFit == .cover {
+            return .stretch
+        }
+        return options.screenFit
     }
 
     private func replaceScreenMaterial(on node: SCNNode, materialName: String, texture: NSImage) {
@@ -214,9 +219,7 @@ public struct DeviceRenderer: Sendable {
         let diffuseMappingChannel = existing.diffuse.mappingChannel
         configureScreenMaterial(replacement, texture: texture)
         replacement.diffuse.contentsTransform = diffuseTransform
-        replacement.emission.contentsTransform = diffuseTransform
         replacement.diffuse.mappingChannel = diffuseMappingChannel
-        replacement.emission.mappingChannel = diffuseMappingChannel
         return replacement
     }
 
@@ -224,13 +227,69 @@ public struct DeviceRenderer: Sendable {
         material.lightingModel = .constant
         material.isDoubleSided = true
         material.diffuse.contents = texture
-        material.emission.contents = texture
+        material.diffuse.intensity = 1
+        material.emission.contents = NSColor.black
+        material.emission.intensity = 0
         material.diffuse.magnificationFilter = .linear
         material.diffuse.minificationFilter = .linear
         material.diffuse.mipFilter = .linear
-        material.emission.magnificationFilter = .linear
-        material.emission.minificationFilter = .linear
-        material.emission.mipFilter = .linear
+    }
+
+    private func addScreenOverlay(
+        to scene: SCNScene,
+        screenNode: SCNNode,
+        texture: NSImage,
+        options: RenderOptions
+    ) throws {
+        let metrics = try screenPlaneMetrics(for: screenNode)
+        let xAxis: SIMD3<Float>
+        let yAxis: SIMD3<Float>
+        let width: Float
+        let height: Float
+
+        switch options.orientation {
+        case .landscape:
+            xAxis = axis(metrics.majorAxis, alignedWith: SIMD3<Float>(1, 0, 0))
+            yAxis = axis(metrics.minorAxis, alignedWith: SIMD3<Float>(0, 1, 0))
+            width = metrics.majorLength
+            height = metrics.minorLength
+        case .portrait:
+            xAxis = axis(metrics.minorAxis, alignedWith: SIMD3<Float>(1, 0, 0))
+            yAxis = axis(metrics.majorAxis, alignedWith: SIMD3<Float>(0, 1, 0))
+            width = metrics.minorLength
+            height = metrics.majorLength
+        }
+
+        var normal = metrics.normal
+        if simd_dot(normal, SIMD3<Float>(0, 0, 1)) < 0 {
+            normal = -normal
+        }
+
+        let material = SCNMaterial()
+        material.name = "3dsg-screen-overlay-material"
+        configureScreenMaterial(material, texture: texture)
+        material.readsFromDepthBuffer = true
+        material.writesToDepthBuffer = false
+
+        let plane = SCNPlane(width: CGFloat(width), height: CGFloat(height))
+        plane.cornerRadius = CGFloat(min(width, height) * 0.035)
+        plane.cornerSegmentCount = 16
+        plane.materials = [material]
+
+        let overlay = SCNNode(geometry: plane)
+        overlay.name = "3dsg-screen-overlay"
+        overlay.simdTransform = simd_float4x4(columns: (
+            SIMD4<Float>(xAxis.x, xAxis.y, xAxis.z, 0),
+            SIMD4<Float>(yAxis.x, yAxis.y, yAxis.z, 0),
+            SIMD4<Float>(normal.x, normal.y, normal.z, 0),
+            SIMD4<Float>(
+                metrics.center.x + normal.x * 0.02,
+                metrics.center.y + normal.y * 0.02,
+                metrics.center.z + normal.z * 0.02,
+                1
+            )
+        ))
+        scene.rootNode.addChildNode(overlay)
     }
 
     private func orient(wrapper: SCNNode, screenNode: SCNNode, options: RenderOptions) throws {
@@ -359,30 +418,37 @@ public struct DeviceRenderer: Sendable {
     }
 
     private func projectedMajorAxis(for node: SCNNode) throws -> SIMD2<Float> {
-        let points = try worldVertices(of: node).map { SIMD2<Float>($0.x, $0.y) }
-        guard points.count >= 3 else {
-            return SIMD2<Float>(0, 1)
-        }
-        let mean = points.reduce(SIMD2<Float>(repeating: 0), +) / Float(points.count)
-        var xx: Float = 0
-        var xy: Float = 0
-        var yy: Float = 0
-        for point in points {
-            let delta = point - mean
-            xx += delta.x * delta.x
-            xy += delta.x * delta.y
-            yy += delta.y * delta.y
-        }
-        let angle = 0.5 * atan2(2 * xy, xx - yy)
-        let axis = SIMD2<Float>(cos(angle), sin(angle))
+        let metrics = try screenPlaneMetrics(for: node)
+        let axis = SIMD2<Float>(metrics.majorAxis.x, metrics.majorAxis.y)
         if simd_length(axis) > 0.0001 {
             return simd_normalize(axis)
         }
         return SIMD2<Float>(0, 1)
     }
 
-    private func screenTextureSize(for node: SCNNode, manifest: AssetManifest) throws -> PixelSize {
+    private func screenTextureSize(for node: SCNNode, manifest: AssetManifest, options: RenderOptions) throws -> PixelSize {
         let baseSize = try manifest.textureSize
+        if manifest.usesScreenOverlay {
+            let metrics = try screenPlaneMetrics(for: node)
+            let maximumTextureEdge = max(baseSize.width, baseSize.height)
+            let aspect = options.orientation == .landscape
+                ? metrics.majorLength / metrics.minorLength
+                : metrics.minorLength / metrics.majorLength
+
+            guard aspect.isFinite, aspect > 0 else {
+                return baseSize
+            }
+
+            switch options.orientation {
+            case .landscape:
+                let height = max(1, Int((Float(maximumTextureEdge) / aspect).rounded()))
+                return try PixelSize(width: maximumTextureEdge, height: height)
+            case .portrait:
+                let width = max(1, Int((Float(maximumTextureEdge) * aspect).rounded()))
+                return try PixelSize(width: width, height: maximumTextureEdge)
+            }
+        }
+
         let displayAspect = try screenDisplayAspect(for: node, nativeOrientation: manifest.nativeScreenOrientation)
         let baseAspect = Float(baseSize.width) / Float(baseSize.height)
 
@@ -406,38 +472,67 @@ public struct DeviceRenderer: Sendable {
     }
 
     private func screenDisplayAspect(for node: SCNNode, nativeOrientation: DeviceOrientation) throws -> Float {
+        let metrics = try screenPlaneMetrics(for: node)
+
+        switch nativeOrientation {
+        case .portrait:
+            return metrics.minorLength / metrics.majorLength
+        case .landscape:
+            return metrics.majorLength / metrics.minorLength
+        }
+    }
+
+    private func screenPlaneMetrics(for node: SCNNode) throws -> ScreenPlaneMetrics {
         let points = try worldVertices(of: node)
         guard points.count >= 3 else {
             throw ThreeDSGError.renderFailed("screen node has too few vertices")
         }
 
-        let normal = try screenNormal(node)
+        var normal = try screenNormal(node)
+        if simd_length(normal) <= 0.0001 {
+            throw ThreeDSGError.renderFailed("could not measure screen normal")
+        }
+        normal = simd_normalize(normal)
+
         let reference = abs(normal.y) < 0.9
             ? SIMD3<Float>(0, 1, 0)
             : SIMD3<Float>(1, 0, 0)
-        let axisU = simd_normalize(simd_cross(reference, normal))
-        let axisV = simd_normalize(simd_cross(normal, axisU))
+        let basisU = simd_normalize(simd_cross(reference, normal))
+        let basisV = simd_normalize(simd_cross(normal, basisU))
 
         let projected = points.map { point in
             SIMD2<Float>(
-                simd_dot(point, axisU),
-                simd_dot(point, axisV)
+                simd_dot(point, basisU),
+                simd_dot(point, basisV)
             )
         }
-        let axes = principalSurfaceAxes(for: projected)
-        let majorLength = projectedLength(of: projected, along: axes.major)
-        let minorLength = projectedLength(of: projected, along: axes.minor)
+        var axes = principalSurfaceAxes(for: projected)
+        var majorLength = projectedLength(of: projected, along: axes.major)
+        var minorLength = projectedLength(of: projected, along: axes.minor)
+        if minorLength > majorLength {
+            swap(&majorLength, &minorLength)
+            axes = (major: axes.minor, minor: axes.major)
+        }
 
         guard majorLength > 0.0001, minorLength > 0.0001 else {
             throw ThreeDSGError.renderFailed("could not measure screen aspect")
         }
 
-        switch nativeOrientation {
-        case .portrait:
-            return minorLength / majorLength
-        case .landscape:
-            return majorLength / minorLength
-        }
+        let majorAxis = simd_normalize(basisU * axes.major.x + basisV * axes.major.y)
+        let minorAxis = simd_normalize(basisU * axes.minor.x + basisV * axes.minor.y)
+        let midMajor = projectedMidpoint(of: projected, along: axes.major)
+        let midMinor = projectedMidpoint(of: projected, along: axes.minor)
+        let normalCoordinate = points.reduce(Float(0)) { $0 + simd_dot($1, normal) } / Float(points.count)
+        let center = majorAxis * midMajor + minorAxis * midMinor + normal * normalCoordinate
+
+        return ScreenPlaneMetrics(
+            center: center,
+            normal: normal,
+            majorAxis: majorAxis,
+            minorAxis: minorAxis,
+            majorLength: majorLength,
+            minorLength: minorLength
+        )
     }
 
     private func principalSurfaceAxes(for points: [SIMD2<Float>]) -> (major: SIMD2<Float>, minor: SIMD2<Float>) {
@@ -467,6 +562,22 @@ public struct DeviceRenderer: Sendable {
             maximum = max(maximum, projected)
         }
         return maximum - minimum
+    }
+
+    private func projectedMidpoint(of points: [SIMD2<Float>], along axis: SIMD2<Float>) -> Float {
+        var minimum = Float.greatestFiniteMagnitude
+        var maximum = -Float.greatestFiniteMagnitude
+        for point in points {
+            let projected = simd_dot(point, axis)
+            minimum = min(minimum, projected)
+            maximum = max(maximum, projected)
+        }
+        return (minimum + maximum) / 2
+    }
+
+    private func axis(_ source: SIMD3<Float>, alignedWith target: SIMD3<Float>) -> SIMD3<Float> {
+        let axis = simd_length(source) > 0.0001 ? simd_normalize(source) : target
+        return simd_dot(axis, target) < 0 ? -axis : axis
     }
 
     private func worldVertices(of node: SCNNode) throws -> [SIMD3<Float>] {
@@ -584,6 +695,15 @@ private struct DeviceSelection {
     var screenNode: SCNNode
 }
 
+private struct ScreenPlaneMetrics {
+    var center: SIMD3<Float>
+    var normal: SIMD3<Float>
+    var majorAxis: SIMD3<Float>
+    var minorAxis: SIMD3<Float>
+    var majorLength: Float
+    var minorLength: Float
+}
+
 private struct AssetManifest {
     var assetFileName: String
     var rootNodeName: String
@@ -592,6 +712,7 @@ private struct AssetManifest {
     var textureHeight: Int
     var screenNodeName: String?
     var screenMaterialName: String
+    var usesScreenOverlay: Bool
 
     let iPhoneProNodeName = "VEyUSflTHtkVqsc"
     let iPhoneProMaxNodeName = "fXODuXAELCboksi"
@@ -615,7 +736,8 @@ private struct AssetManifest {
                 textureWidth: 1024,
                 textureHeight: 2048,
                 screenNodeName: "TlsdYMuhscHijgo",
-                screenMaterialName: "vGYRiudxdzSQpSA"
+                screenMaterialName: "vGYRiudxdzSQpSA",
+                usesScreenOverlay: false
             )
         case .iPad:
             AssetManifest(
@@ -625,7 +747,8 @@ private struct AssetManifest {
                 textureWidth: 2732,
                 textureHeight: 2048,
                 screenNodeName: nil,
-                screenMaterialName: "OXrDZyQkqgcIHDh"
+                screenMaterialName: "OXrDZyQkqgcIHDh",
+                usesScreenOverlay: true
             )
         }
     }
