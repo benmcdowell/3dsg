@@ -21,7 +21,7 @@ swift run 3dsg render \
 ```
 
 The original files in `Assets/` are loaded read-only and are not modified.
-Renders are produced internally at high resolution, trimmed to the non-transparent pixels, and then scaled so the final PNG fits within the max dimensions provided by `--size`.
+Renders are produced internally at a size derived from `--size`, trimmed to the non-transparent pixels, and then scaled so the final PNG fits within the max dimensions provided by `--size`.
 
 Supported devices:
 

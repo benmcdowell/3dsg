@@ -4,16 +4,20 @@ import SceneKit
 import simd
 
 public struct DeviceRenderer: Sendable {
-    private static let defaultInternalRenderSize = try! Dimensions(width: 8000, height: 8000)
+    private static let cameraFramingPadding: Float = 1.15
+    private static let defaultInternalRenderScale = 2.0
 
-    private let internalRenderSize: Dimensions
+    private let internalRenderScale: Double
+    private let internalRenderSizeOverride: Dimensions?
 
     public init() {
-        self.internalRenderSize = Self.defaultInternalRenderSize
+        self.internalRenderScale = Self.defaultInternalRenderScale
+        self.internalRenderSizeOverride = nil
     }
 
     init(internalRenderSize: Dimensions) {
-        self.internalRenderSize = internalRenderSize
+        self.internalRenderScale = 1
+        self.internalRenderSizeOverride = internalRenderSize
     }
 
     public func render(_ options: RenderOptions) throws -> RenderResult {
@@ -54,13 +58,14 @@ public struct DeviceRenderer: Sendable {
         try orient(wrapper: wrapper, screenNode: selection.screenNode, options: options)
         center(wrapper)
 
-        let camera = try addCamera(to: workingScene, framing: wrapper, outputSize: internalRenderSize)
+        let renderSize = try internalRenderSize(for: options.outputSize)
+        let camera = try addCamera(to: workingScene, framing: wrapper, outputSize: renderSize)
         addLights(to: workingScene, camera: camera)
 
         let png = try renderPNG(
             scene: workingScene,
             camera: camera,
-            renderSize: internalRenderSize,
+            renderSize: renderSize,
             outputSize: options.outputSize
         )
         try fileManager.createDirectory(
@@ -89,6 +94,17 @@ public struct DeviceRenderer: Sendable {
         guard fileManager.fileExists(atPath: assetURL.path) else {
             throw ThreeDSGError.assetNotFound(manifest.assetFileName, assetURL)
         }
+    }
+
+    private func internalRenderSize(for outputSize: Dimensions) throws -> Dimensions {
+        if let override = internalRenderSizeOverride {
+            return override
+        }
+
+        let maxOutputSide = max(outputSize.width, outputSize.height)
+        let paddedSide = Double(maxOutputSide) * Double(Self.cameraFramingPadding)
+        let side = max(maxOutputSide, Int((paddedSide * internalRenderScale).rounded(.up)))
+        return try Dimensions(width: side, height: side)
     }
 
     private func preparedSceneURL(
@@ -387,8 +403,7 @@ public struct DeviceRenderer: Sendable {
         let depth = max(bounds.size.z, 0.1)
         let requiredHeight = max(height, width / aspect)
         let fov = Float(camera.fieldOfView) * .pi / 180
-        let padding: Float = 1.15
-        let distance = (requiredHeight * padding / 2) / tan(fov / 2)
+        let distance = (requiredHeight * Self.cameraFramingPadding / 2) / tan(fov / 2)
 
         let cameraNode = SCNNode()
         cameraNode.name = "RenderCamera"
