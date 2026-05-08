@@ -1,4 +1,5 @@
 import AppKit
+import Darwin
 import Foundation
 import SceneKit
 import simd
@@ -34,7 +35,9 @@ public struct DeviceRenderer: Sendable {
         let manifest = AssetManifest.manifest(for: options.device)
         let assetURL = options.assetsDirectoryURL.appendingPathComponent(manifest.assetFileName)
         let sceneURL = try preparedSceneURL(assetURL: assetURL, manifest: manifest, options: options, temporaryDirectory: temporaryDirectory)
-        let sourceScene = try SCNScene(url: sceneURL, options: nil)
+        let sourceScene = try withoutSceneKitDiagnostics {
+            try SCNScene(url: sceneURL, options: nil)
+        }
         let workingScene = SCNScene()
         workingScene.background.contents = NSColor.clear
 
@@ -94,6 +97,36 @@ public struct DeviceRenderer: Sendable {
         guard fileManager.fileExists(atPath: assetURL.path) else {
             throw ThreeDSGError.assetNotFound(manifest.assetFileName, assetURL)
         }
+    }
+
+    private func withoutSceneKitDiagnostics<T>(_ operation: () throws -> T) throws -> T {
+        fflush(stderr)
+
+        let originalStderr = dup(STDERR_FILENO)
+        guard originalStderr >= 0 else {
+            return try operation()
+        }
+
+        let nullDevice = open("/dev/null", O_WRONLY)
+        guard nullDevice >= 0 else {
+            close(originalStderr)
+            return try operation()
+        }
+
+        guard dup2(nullDevice, STDERR_FILENO) >= 0 else {
+            close(nullDevice)
+            close(originalStderr)
+            return try operation()
+        }
+
+        defer {
+            fflush(stderr)
+            dup2(originalStderr, STDERR_FILENO)
+            close(nullDevice)
+            close(originalStderr)
+        }
+
+        return try operation()
     }
 
     private func internalRenderSize(for outputSize: Dimensions) throws -> Dimensions {
@@ -444,11 +477,13 @@ public struct DeviceRenderer: Sendable {
         renderer.pointOfView = camera
         renderer.autoenablesDefaultLighting = true
 
-        let image = renderer.snapshot(
-            atTime: 0,
-            with: CGSize(width: renderSize.width, height: renderSize.height),
-            antialiasingMode: .multisampling4X
-        )
+        let image = try withoutSceneKitDiagnostics {
+            renderer.snapshot(
+                atTime: 0,
+                with: CGSize(width: renderSize.width, height: renderSize.height),
+                antialiasingMode: .multisampling4X
+            )
+        }
         guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             throw ThreeDSGError.renderFailed("could not read rendered image")
         }
@@ -768,8 +803,8 @@ private struct AssetManifest {
     var screenMaterialName: String
     var usesScreenOverlay: Bool
 
-    let iPhoneProNodeName = "VEyUSflTHtkVqsc"
-    let iPhoneProMaxNodeName = "fXODuXAELCboksi"
+    let iPhoneProNodeName = "RQNEPvSqUMnJxkk"
+    let iPhoneProMaxNodeName = "jqrLJsSCRSFSMip"
     let iPadNodeName = "zRrSLDpdYmKeRJQ"
     let iPadKeyboardNodeName = "PoBqSMmyhhcJsBX"
     let iPadPencilNodeName = "UlaXKoqepypaGMQ"
@@ -786,18 +821,18 @@ private struct AssetManifest {
         switch device {
         case .iPhone17Pro, .iPhone17ProMax:
             AssetManifest(
-                assetFileName: "iphone17pro-cosmicorange-ar-202509_GEO_US-3A37738F56E29114.usdz",
-                rootNodeName: "JjEbhuORCZuXqjs",
+                assetFileName: "iphone-17-pro-e-sim.usdz",
+                rootNodeName: "uqyXUHbCOHbdqXa",
                 nativeScreenOrientation: .portrait,
                 textureWidth: 1024,
                 textureHeight: 2048,
-                screenNodeName: "TlsdYMuhscHijgo",
-                screenMaterialName: "vGYRiudxdzSQpSA",
+                screenNodeName: "HkNSnYzBPABcqwM",
+                screenMaterialName: "BsXHDwLKqtDOfrW",
                 usesScreenOverlay: false
             )
         case .iPad:
             AssetManifest(
-                assetFileName: "ipad-pro-m5-13in-spaceblack-mgk-black-pencil-pro-ios26-33F49B60F49CE47A.usdz",
+                assetFileName: "ipad-pro-space-black.usdz",
                 rootNodeName: "COLLuSkZTNlzRUw",
                 nativeScreenOrientation: .landscape,
                 textureWidth: 2732,

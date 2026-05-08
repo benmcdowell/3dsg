@@ -2,6 +2,14 @@
 
 Render app screenshots onto Apple iPhone/iPad USDZ assets and export a flat PNG.
 
+
+## Dependencies
+
+Download the following assets from Apple:
+https://www.apple.com/105/media/us/iphone-17-pro/2025/704d4474-8e63-4ce7-9917-bb47b1ca4ba0/ar/iphone-17-pro-e-sim.usdz
+https://www.apple.com/105/media/us/ipad-pro/2025/adee90db-c01e-430d-b726-fe64c0063f08/ar/ipad-pro-space-black.usdz
+
+
 ## Build
 
 ```sh
