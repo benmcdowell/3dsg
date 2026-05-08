@@ -60,6 +60,14 @@ struct CommandLineParserTests {
     }
 
     @Test
+    func rotatesScreenshotIntoAssetNativeOrientation() {
+        #expect(DeviceOrientation.portrait.rotationQuarterTurns(toNativeOrientation: .portrait) == 0)
+        #expect(DeviceOrientation.landscape.rotationQuarterTurns(toNativeOrientation: .landscape) == 0)
+        #expect(DeviceOrientation.landscape.rotationQuarterTurns(toNativeOrientation: .portrait) == 1)
+        #expect(DeviceOrientation.portrait.rotationQuarterTurns(toNativeOrientation: .landscape) == 1)
+    }
+
+    @Test
     func rejectsIPadColor() throws {
         #expect(throws: ThreeDSGError.self) {
             try CommandLineParser.parse([

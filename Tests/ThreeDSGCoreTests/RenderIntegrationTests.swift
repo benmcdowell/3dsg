@@ -20,15 +20,17 @@ struct RenderIntegrationTests {
             try? FileManager.default.removeItem(at: temporaryDirectory)
         }
 
-        let screenURL = temporaryDirectory.appendingPathComponent("screen.png")
-        try writeQuadrantImage(to: screenURL, width: 900, height: 1200)
+        let portraitScreenURL = temporaryDirectory.appendingPathComponent("screen-portrait.png")
+        let landscapeScreenURL = temporaryDirectory.appendingPathComponent("screen-landscape.png")
+        try writeQuadrantImage(to: portraitScreenURL, width: 900, height: 1200)
+        try writeQuadrantImage(to: landscapeScreenURL, width: 1200, height: 900)
 
         let cases: [RenderOptions] = [
             RenderOptions(
                 device: .iPhone17Pro,
                 orientation: .portrait,
                 color: .deepBlue,
-                screenURL: screenURL,
+                screenURL: portraitScreenURL,
                 outputPNGURL: temporaryDirectory.appendingPathComponent("iphone-pro.png"),
                 outputSize: try Dimensions(width: 360, height: 480),
                 assetsDirectoryURL: assetsDirectory
@@ -38,15 +40,23 @@ struct RenderIntegrationTests {
                 orientation: .landscape,
                 color: .silver,
                 rotation: Rotation(x: 8, y: -12, z: 0),
-                screenURL: screenURL,
+                screenURL: landscapeScreenURL,
                 outputPNGURL: temporaryDirectory.appendingPathComponent("iphone-pro-max.png"),
                 outputSize: try Dimensions(width: 480, height: 360),
                 assetsDirectoryURL: assetsDirectory
             ),
             RenderOptions(
                 device: .iPad,
+                orientation: .portrait,
+                screenURL: portraitScreenURL,
+                outputPNGURL: temporaryDirectory.appendingPathComponent("ipad-portrait.png"),
+                outputSize: try Dimensions(width: 360, height: 480),
+                assetsDirectoryURL: assetsDirectory
+            ),
+            RenderOptions(
+                device: .iPad,
                 orientation: .landscape,
-                screenURL: screenURL,
+                screenURL: landscapeScreenURL,
                 outputPNGURL: temporaryDirectory.appendingPathComponent("ipad.png"),
                 outputSize: try Dimensions(width: 480, height: 360),
                 assetsDirectoryURL: assetsDirectory
@@ -54,7 +64,7 @@ struct RenderIntegrationTests {
             RenderOptions(
                 device: .iPad,
                 orientation: .landscape,
-                screenURL: screenURL,
+                screenURL: landscapeScreenURL,
                 outputPNGURL: temporaryDirectory.appendingPathComponent("ipad-accessories.png"),
                 outputSize: try Dimensions(width: 480, height: 360),
                 assetsDirectoryURL: assetsDirectory,

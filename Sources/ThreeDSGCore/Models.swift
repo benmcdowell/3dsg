@@ -27,6 +27,18 @@ public enum Device: String, CaseIterable, Sendable {
 public enum DeviceOrientation: String, CaseIterable, Sendable {
     case portrait
     case landscape
+
+    func rotationQuarterTurns(toNativeOrientation nativeOrientation: DeviceOrientation) -> Int {
+        switch (self, nativeOrientation) {
+        case (.portrait, .portrait),
+             (.landscape, .landscape):
+            0
+        case (.landscape, .portrait):
+            1
+        case (.portrait, .landscape):
+            1
+        }
+    }
 }
 
 public enum IPhoneColor: String, CaseIterable, Sendable {

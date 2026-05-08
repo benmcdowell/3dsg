@@ -29,15 +29,20 @@ public struct DeviceRenderer: Sendable {
         workingScene.rootNode.addChildNode(wrapper)
 
         let selection = try selectAndMoveDeviceNodes(from: sourceScene, into: wrapper, manifest: manifest, options: options)
-        try orient(wrapper: wrapper, screenNode: selection.screenNode, options: options)
-        center(wrapper)
-
         let screenTexture = try screenTexture(for: selection.screenNode, manifest: manifest, options: options)
         if manifest.usesScreenOverlay {
-            try addScreenOverlay(to: workingScene, screenNode: selection.screenNode, texture: screenTexture, options: options)
+            try addScreenOverlay(
+                to: wrapper,
+                screenNode: selection.screenNode,
+                texture: screenTexture,
+                nativeOrientation: manifest.nativeScreenOrientation
+            )
         } else {
             replaceScreenMaterial(on: selection.screenNode, materialName: manifest.screenMaterialName, texture: screenTexture)
         }
+
+        try orient(wrapper: wrapper, screenNode: selection.screenNode, options: options)
+        center(wrapper)
 
         let camera = try addCamera(to: workingScene, framing: wrapper, outputSize: options.outputSize)
         addLights(to: workingScene, camera: camera)
@@ -170,8 +175,8 @@ public struct DeviceRenderer: Sendable {
     }
 
     private func screenTexture(for screenNode: SCNNode, manifest: AssetManifest, options: RenderOptions) throws -> NSImage {
-        let textureSize = try screenTextureSize(for: screenNode, manifest: manifest, options: options)
-        let rotate = manifest.nativeScreenOrientation == options.orientation ? 0 : 1
+        let textureSize = try screenTextureSize(for: screenNode, manifest: manifest)
+        let rotate = options.orientation.rotationQuarterTurns(toNativeOrientation: manifest.nativeScreenOrientation)
         let fit = effectiveScreenFit(for: manifest, options: options)
         return try ImageFitter.fittedImage(
             from: options.screenURL,
@@ -236,10 +241,10 @@ public struct DeviceRenderer: Sendable {
     }
 
     private func addScreenOverlay(
-        to scene: SCNScene,
+        to parent: SCNNode,
         screenNode: SCNNode,
         texture: NSImage,
-        options: RenderOptions
+        nativeOrientation: DeviceOrientation
     ) throws {
         let metrics = try screenPlaneMetrics(for: screenNode)
         let xAxis: SIMD3<Float>
@@ -247,7 +252,7 @@ public struct DeviceRenderer: Sendable {
         let width: Float
         let height: Float
 
-        switch options.orientation {
+        switch nativeOrientation {
         case .landscape:
             xAxis = axis(metrics.majorAxis, alignedWith: SIMD3<Float>(1, 0, 0))
             yAxis = axis(metrics.minorAxis, alignedWith: SIMD3<Float>(0, 1, 0))
@@ -289,7 +294,7 @@ public struct DeviceRenderer: Sendable {
                 1
             )
         ))
-        scene.rootNode.addChildNode(overlay)
+        parent.addChildNode(overlay)
     }
 
     private func orient(wrapper: SCNNode, screenNode: SCNNode, options: RenderOptions) throws {
@@ -426,29 +431,8 @@ public struct DeviceRenderer: Sendable {
         return SIMD2<Float>(0, 1)
     }
 
-    private func screenTextureSize(for node: SCNNode, manifest: AssetManifest, options: RenderOptions) throws -> PixelSize {
+    private func screenTextureSize(for node: SCNNode, manifest: AssetManifest) throws -> PixelSize {
         let baseSize = try manifest.textureSize
-        if manifest.usesScreenOverlay {
-            let metrics = try screenPlaneMetrics(for: node)
-            let maximumTextureEdge = max(baseSize.width, baseSize.height)
-            let aspect = options.orientation == .landscape
-                ? metrics.majorLength / metrics.minorLength
-                : metrics.minorLength / metrics.majorLength
-
-            guard aspect.isFinite, aspect > 0 else {
-                return baseSize
-            }
-
-            switch options.orientation {
-            case .landscape:
-                let height = max(1, Int((Float(maximumTextureEdge) / aspect).rounded()))
-                return try PixelSize(width: maximumTextureEdge, height: height)
-            case .portrait:
-                let width = max(1, Int((Float(maximumTextureEdge) * aspect).rounded()))
-                return try PixelSize(width: width, height: maximumTextureEdge)
-            }
-        }
-
         let displayAspect = try screenDisplayAspect(for: node, nativeOrientation: manifest.nativeScreenOrientation)
         let baseAspect = Float(baseSize.width) / Float(baseSize.height)
 
