@@ -140,6 +140,10 @@ public struct DeviceRenderer: Sendable {
             if options.showPencil, let pencil = root.childNode(withName: manifest.iPadPencilNodeName, recursively: true) {
                 movePreservingWorld(pencil, into: group)
             }
+            if !options.showPencil {
+                hideNodes(named: manifest.iPadPencilShadowNodeNames, under: group)
+                clearAmbientOcclusion(onMaterialsNamed: manifest.iPadPencilShadowMaterialNames, under: group)
+            }
         }
 
         let screenNode: SCNNode
@@ -173,6 +177,26 @@ public struct DeviceRenderer: Sendable {
             }
         }
         return nil
+    }
+
+    private func hideNodes(named names: [String], under node: SCNNode) {
+        for name in names {
+            node.childNode(withName: name, recursively: true)?.isHidden = true
+        }
+    }
+
+    private func clearAmbientOcclusion(onMaterialsNamed names: [String], under node: SCNNode) {
+        guard !names.isEmpty else { return }
+        let names = Set(names)
+        node.enumerateHierarchy { candidate, _ in
+            guard let geometry = candidate.geometry else {
+                return
+            }
+            for material in geometry.materials where material.name.map(names.contains) == true {
+                material.ambientOcclusion.contents = nil
+                material.ambientOcclusion.intensity = 0
+            }
+        }
     }
 
     private func screenTexture(for screenNode: SCNNode, manifest: AssetManifest, options: RenderOptions) throws -> NSImage {
@@ -707,6 +731,8 @@ private struct AssetManifest {
     let iPadNodeName = "zRrSLDpdYmKeRJQ"
     let iPadKeyboardNodeName = "PoBqSMmyhhcJsBX"
     let iPadPencilNodeName = "UlaXKoqepypaGMQ"
+    var iPadPencilShadowNodeNames: [String] = []
+    var iPadPencilShadowMaterialNames: [String] = []
 
     var textureSize: PixelSize {
         get throws {
@@ -736,7 +762,14 @@ private struct AssetManifest {
                 textureHeight: 2048,
                 screenNodeName: nil,
                 screenMaterialName: "OXrDZyQkqgcIHDh",
-                usesScreenOverlay: true
+                usesScreenOverlay: true,
+                // Baked top-edge Pencil contact shadow inside the iPad component.
+                iPadPencilShadowNodeNames: [
+                    "mriWlabCVLUskzX"
+                ],
+                iPadPencilShadowMaterialNames: [
+                    "AQYGetoGtanvwug"
+                ]
             )
         }
     }

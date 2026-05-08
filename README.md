@@ -32,4 +32,3 @@ Useful options:
 
 - `--rotation X,Y,Z` applies extra 3D rotation in degrees after default framing.
 - `--screen-fit cover|contain|stretch` controls screenshot fitting.
-- `--show-keyboard` and `--show-pencil` opt into iPad accessories.
