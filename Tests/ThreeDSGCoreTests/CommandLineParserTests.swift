@@ -68,6 +68,13 @@ struct CommandLineParserTests {
     }
 
     @Test
+    func normalizesIPhone17ProSourceRotation() {
+        #expect(Device.iPhone17Pro.assetNormalizationRotation == Rotation(x: 0, y: 180, z: 0))
+        #expect(Device.iPhone17ProMax.assetNormalizationRotation == .zero)
+        #expect(Device.iPad.assetNormalizationRotation == .zero)
+    }
+
+    @Test
     func parsesIPadPro13InchDeviceName() throws {
         let command = try CommandLineParser.parse([
             "render",

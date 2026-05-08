@@ -316,6 +316,9 @@ public struct DeviceRenderer: Sendable {
         )
         wrapper.simdOrientation = simd_quatf(angle: angle, axis: SIMD3<Float>(0, 0, 1)) * wrapper.simdOrientation
 
+        let assetNormalizationRotation = rotationQuaternion(options.device.assetNormalizationRotation)
+        wrapper.simdOrientation = assetNormalizationRotation * wrapper.simdOrientation
+
         let userRotation = rotationQuaternion(options.rotation)
         wrapper.simdOrientation = userRotation * wrapper.simdOrientation
     }

@@ -22,6 +22,15 @@ public enum Device: String, CaseIterable, Sendable {
             .landscape
         }
     }
+
+    var assetNormalizationRotation: Rotation {
+        switch self {
+        case .iPhone17Pro:
+            Rotation(x: 0, y: 180, z: 0)
+        case .iPhone17ProMax, .iPad:
+            .zero
+        }
+    }
 }
 
 public enum DeviceOrientation: String, CaseIterable, Sendable {
