@@ -132,6 +132,7 @@ public struct DeviceRenderer: Sendable {
         wrapper.addChildNode(group)
         movePreservingWorld(subject, into: group)
 
+        // Keyboard and Pencil support is WIP; the CLI does not expose these options yet.
         if options.device == .iPad {
             if options.showKeyboard, let keyboard = root.childNode(withName: manifest.iPadKeyboardNodeName, recursively: true) {
                 movePreservingWorld(keyboard, into: group)

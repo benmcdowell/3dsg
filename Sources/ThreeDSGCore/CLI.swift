@@ -31,8 +31,6 @@ public struct CommandLineParser: Sendable {
         var assetsDirectoryURL = currentDirectory.appendingPathComponent("Assets")
         var screenFit = ScreenFit.cover
         var screenFitWasSpecified = false
-        var showKeyboard = false
-        var showPencil = false
 
         while let option = parser.nextOption() {
             switch option {
@@ -74,10 +72,6 @@ public struct CommandLineParser: Sendable {
                 }
                 screenFit = parsed
                 screenFitWasSpecified = true
-            case "--show-keyboard":
-                showKeyboard = true
-            case "--show-pencil":
-                showPencil = true
             default:
                 throw ThreeDSGError.usage("unknown option: \(option)\n\n\(Self.usage)")
             }
@@ -99,9 +93,6 @@ public struct CommandLineParser: Sendable {
         if !device.isIPhone && colorWasProvided {
             throw ThreeDSGError.unsupportedOption("--color is only supported for iPhone renders")
         }
-        if device.isIPhone && (showKeyboard || showPencil) {
-            throw ThreeDSGError.unsupportedOption("--show-keyboard and --show-pencil are only supported for iPad renders")
-        }
 
         let options = RenderOptions(
             device: device,
@@ -113,9 +104,7 @@ public struct CommandLineParser: Sendable {
             outputSize: outputSize,
             assetsDirectoryURL: assetsDirectoryURL,
             screenFit: screenFit,
-            screenFitWasSpecified: screenFitWasSpecified,
-            showKeyboard: showKeyboard,
-            showPencil: showPencil
+            screenFitWasSpecified: screenFitWasSpecified
         )
         return .render(options)
     }
@@ -130,8 +119,6 @@ public struct CommandLineParser: Sendable {
       --rotation X,Y,Z                       Extra device rotation in degrees. Default: 0,0,0.
       --assets-dir path                      Default: ./Assets.
       --screen-fit cover|contain|stretch     Default: cover for iPhone; stretch for iPad.
-      --show-keyboard                        iPad only. Hidden by default.
-      --show-pencil                          iPad only. Hidden by default.
       -h, --help                             Show this help.
 
     Output:

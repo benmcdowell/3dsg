@@ -121,6 +121,31 @@ struct CommandLineParserTests {
     }
 
     @Test
+    func rejectsAccessoryFlags() throws {
+        #expect(throws: ThreeDSGError.self) {
+            try CommandLineParser.parse([
+                "render",
+                "--device", "ipad-pro-13-inch",
+                "--screen", "screen.png",
+                "--output", "render.png",
+                "--size", "800x600",
+                "--show-keyboard"
+            ], currentDirectory: root)
+        }
+
+        #expect(throws: ThreeDSGError.self) {
+            try CommandLineParser.parse([
+                "render",
+                "--device", "ipad-pro-13-inch",
+                "--screen", "screen.png",
+                "--output", "render.png",
+                "--size", "800x600",
+                "--show-pencil"
+            ], currentDirectory: root)
+        }
+    }
+
+    @Test
     func rejectsBadSize() throws {
         #expect(throws: ThreeDSGError.self) {
             try CommandLineParser.parse([
