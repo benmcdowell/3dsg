@@ -73,8 +73,21 @@ struct RenderIntegrationTests {
             #expect(FileManager.default.fileExists(atPath: result.pngURL.path))
             let sidecarUSDZ = result.pngURL.deletingPathExtension().appendingPathExtension("usdz")
             #expect(!FileManager.default.fileExists(atPath: sidecarUSDZ.path))
-            try assertPNG(result.pngURL, fitsWithin: renderCase.outputSize)
+            guard let outputSize = renderCase.outputSize else {
+                Issue.record("expected explicit output size")
+                continue
+            }
+            try assertPNG(result.pngURL, fitsWithin: outputSize)
         }
+
+        let defaultSizeRender = RenderOptions(
+            device: .iPhone17Pro,
+            screenURL: portraitScreenURL,
+            outputPNGURL: temporaryDirectory.appendingPathComponent("iphone-default-size.png"),
+            assetsDirectoryURL: assetsDirectory
+        )
+        let defaultSizeResult = try DeviceRenderer().render(defaultSizeRender)
+        try assertPNG(defaultSizeResult.pngURL, fitsWithin: Dimensions(width: 900, height: 1200))
 
         let afterHashes = try assetHashes(in: assetsDirectory)
         #expect(beforeHashes == afterHashes)

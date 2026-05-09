@@ -118,7 +118,7 @@ public struct RenderOptions: Equatable, Sendable {
     public var rotation: Rotation
     public var screenURL: URL
     public var outputPNGURL: URL
-    public var outputSize: Dimensions
+    public var outputSize: Dimensions?
     public var assetsDirectoryURL: URL
     public var screenFit: ScreenFit
     public var screenFitWasSpecified: Bool
@@ -131,7 +131,7 @@ public struct RenderOptions: Equatable, Sendable {
         rotation: Rotation = .zero,
         screenURL: URL,
         outputPNGURL: URL,
-        outputSize: Dimensions,
+        outputSize: Dimensions? = nil,
         assetsDirectoryURL: URL,
         screenFit: ScreenFit = .cover,
         screenFitWasSpecified: Bool = false,

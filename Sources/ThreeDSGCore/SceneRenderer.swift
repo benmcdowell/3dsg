@@ -46,11 +46,12 @@ public struct DeviceRenderer: Sendable {
         workingScene.rootNode.addChildNode(wrapper)
 
         let selection = try selectAndMoveDeviceNodes(from: sourceScene, into: wrapper, manifest: manifest, options: options)
-        let screenOrientation = try ImageFitter.orientation(ofImageAt: options.screenURL)
+        let screenInfo = try ImageFitter.info(ofImageAt: options.screenURL)
+        let outputSize = try effectiveOutputSize(for: options, screenInfo: screenInfo)
         let screenTexture = try screenTexture(
             for: selection.screenNode,
             manifest: manifest,
-            screenOrientation: screenOrientation,
+            screenOrientation: screenInfo.orientation,
             options: options
         )
         if manifest.usesScreenOverlay {
@@ -64,10 +65,10 @@ public struct DeviceRenderer: Sendable {
             replaceScreenMaterial(on: selection.screenNode, materialName: manifest.screenMaterialName, texture: screenTexture)
         }
 
-        try orient(wrapper: wrapper, screenNode: selection.screenNode, screenOrientation: screenOrientation, options: options)
+        try orient(wrapper: wrapper, screenNode: selection.screenNode, screenOrientation: screenInfo.orientation, options: options)
         center(wrapper)
 
-        let renderSize = try internalRenderSize(for: options.outputSize)
+        let renderSize = try internalRenderSize(for: outputSize)
         let camera = try addCamera(to: workingScene, framing: wrapper, outputSize: renderSize)
         addLightingEnvironment(to: workingScene)
 
@@ -75,7 +76,7 @@ public struct DeviceRenderer: Sendable {
             scene: workingScene,
             camera: camera,
             renderSize: renderSize,
-            outputSize: options.outputSize
+            outputSize: outputSize
         )
         try fileManager.createDirectory(
             at: options.outputPNGURL.deletingLastPathComponent(),
@@ -144,6 +145,13 @@ public struct DeviceRenderer: Sendable {
         let paddedSide = Double(maxOutputSide) * Double(Self.cameraFramingPadding)
         let side = max(maxOutputSide, Int((paddedSide * internalRenderScale).rounded(.up)))
         return try Dimensions(width: side, height: side)
+    }
+
+    private func effectiveOutputSize(for options: RenderOptions, screenInfo: ImageInfo) throws -> Dimensions {
+        if let outputSize = options.outputSize {
+            return outputSize
+        }
+        return try Dimensions(width: screenInfo.pixelSize.width, height: screenInfo.pixelSize.height)
     }
 
     private func preparedSceneURL(

@@ -80,10 +80,18 @@ struct ImageFitterTests {
         try writeImage(to: landscapeURL, width: 800, height: 400)
         try writeImage(to: squareURL, width: 500, height: 500)
 
+        let portraitInfo = try ImageFitter.info(ofImageAt: portraitURL)
+        let landscapeInfo = try ImageFitter.info(ofImageAt: landscapeURL)
+        let expectedPortraitSize = try PixelSize(width: 400, height: 800)
+        let expectedLandscapeSize = try PixelSize(width: 800, height: 400)
+
+        #expect(portraitInfo.orientation == .portrait)
+        #expect(portraitInfo.pixelSize == expectedPortraitSize)
+        #expect(landscapeInfo.orientation == .landscape)
+        #expect(landscapeInfo.pixelSize == expectedLandscapeSize)
         #expect(try ImageFitter.orientation(ofImageAt: portraitURL) == .portrait)
-        #expect(try ImageFitter.orientation(ofImageAt: landscapeURL) == .landscape)
         #expect(throws: ThreeDSGError.self) {
-            try ImageFitter.orientation(ofImageAt: squareURL)
+            try ImageFitter.info(ofImageAt: squareURL)
         }
     }
 

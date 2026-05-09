@@ -14,20 +14,30 @@ public struct PixelSize: Equatable, Sendable {
     }
 }
 
+public struct ImageInfo: Equatable, Sendable {
+    public var pixelSize: PixelSize
+    public var orientation: DeviceOrientation
+}
+
 public enum ImageFitter {
-    public static func orientation(ofImageAt inputURL: URL) throws -> DeviceOrientation {
+    public static func info(ofImageAt inputURL: URL) throws -> ImageInfo {
         guard let image = NSImage(contentsOf: inputURL),
               let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             throw ThreeDSGError.imageLoadFailed(inputURL)
         }
 
+        let pixelSize = try PixelSize(width: cgImage.width, height: cgImage.height)
         if cgImage.width > cgImage.height {
-            return .landscape
+            return ImageInfo(pixelSize: pixelSize, orientation: .landscape)
         }
         if cgImage.height > cgImage.width {
-            return .portrait
+            return ImageInfo(pixelSize: pixelSize, orientation: .portrait)
         }
         throw ThreeDSGError.invalidValue("--screen image must be portrait or landscape; square images cannot infer orientation")
+    }
+
+    public static func orientation(ofImageAt inputURL: URL) throws -> DeviceOrientation {
+        try info(ofImageAt: inputURL).orientation
     }
 
     public static func fittedImage(

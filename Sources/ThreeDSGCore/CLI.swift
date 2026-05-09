@@ -7,19 +7,24 @@ public enum Command: Equatable, Sendable {
 
 public struct CommandLineParser: Sendable {
     public static func parse(_ arguments: [String], currentDirectory: URL) throws -> Command {
-        guard let command = arguments.first else {
+        guard let firstArgument = arguments.first else {
             throw ThreeDSGError.usage(Self.usage)
         }
 
-        if command == "-h" || command == "--help" {
+        if firstArgument == "-h" || firstArgument == "--help" {
             return .help
         }
 
-        guard command == "render" else {
-            throw ThreeDSGError.usage("unknown command: \(command)\n\n\(Self.usage)")
+        let renderArguments: [String]
+        if firstArgument == "render" {
+            renderArguments = Array(arguments.dropFirst())
+        } else if firstArgument.hasPrefix("-") {
+            renderArguments = arguments
+        } else {
+            throw ThreeDSGError.usage("unknown command: \(firstArgument)\n\n\(Self.usage)")
         }
 
-        var parser = OptionParser(Array(arguments.dropFirst()))
+        var parser = OptionParser(renderArguments)
         var device: Device?
         var color: IPhoneColor?
         var colorWasProvided = false
@@ -72,9 +77,6 @@ public struct CommandLineParser: Sendable {
         guard let outputPNGURL else {
             throw ThreeDSGError.missingRequiredOption("missing required option: --output")
         }
-        guard let outputSize else {
-            throw ThreeDSGError.missingRequiredOption("missing required option: --size")
-        }
 
         if !device.isIPhone && colorWasProvided {
             throw ThreeDSGError.unsupportedOption("--color is only supported for iPhone renders")
@@ -94,12 +96,12 @@ public struct CommandLineParser: Sendable {
 
     public static let usage = """
     Usage:
-      3dsg render --device iphone-17-pro|iphone-17-pro-max|ipad-pro-13-inch --screen path --output path.png --size WIDTHxHEIGHT [options]
+      3dsg --device iphone-17-pro|iphone-17-pro-max|ipad-pro-13-inch --screen path --output path.png [options]
 
     Options:
       --color cosmic-orange|deep-blue|silver iPhone only. Default: cosmic-orange.
       --rotation X,Y,Z                       Extra device rotation in degrees. Default: 0,0,0.
-      --size WIDTHxHEIGHT                    Max output dimensions after transparent edge trimming.
+      --size WIDTHxHEIGHT                    Max output dimensions after transparent edge trimming. Default: --screen dimensions.
       --assets-dir path                      Default: ./Assets.
       -h, --help                             Show this help.
 

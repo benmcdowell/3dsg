@@ -7,13 +7,11 @@ struct CommandLineParserTests {
     private let root = URL(fileURLWithPath: "/tmp/3dsg-tests", isDirectory: true)
 
     @Test
-    func parsesRenderCommandWithDefaults() throws {
+    func parsesOptionsWithoutRenderCommandWithDefaults() throws {
         let command = try CommandLineParser.parse([
-            "render",
             "--device", "iphone-17-pro",
             "--screen", "screen.png",
-            "--output", "out/render.png",
-            "--size", "1200x900"
+            "--output", "out/render.png"
         ], currentDirectory: root)
 
         guard case .render(let options) = command else {
@@ -25,14 +23,12 @@ struct CommandLineParserTests {
         #expect(options.color == .cosmicOrange)
         #expect(options.screenFit == .cover)
         #expect(options.screenFitWasSpecified == false)
-        let expectedSize = try Dimensions(width: 1200, height: 900)
-        #expect(options.outputSize == expectedSize)
+        #expect(options.outputSize == nil)
     }
 
     @Test
     func parsesExplicitOptions() throws {
         let command = try CommandLineParser.parse([
-            "render",
             "--device=iphone-17-pro-max",
             "--color=deep-blue",
             "--rotation", "12,0,-45",
@@ -52,7 +48,26 @@ struct CommandLineParserTests {
         #expect(options.rotation == Rotation(x: 12, y: 0, z: -45))
         #expect(options.screenFit == .cover)
         #expect(options.screenFitWasSpecified == false)
+        let expectedSize = try Dimensions(width: 800, height: 600)
+        #expect(options.outputSize == expectedSize)
         #expect(options.assetsDirectoryURL.path == "/tmp/assets")
+    }
+
+    @Test
+    func acceptsLegacyRenderCommandAlias() throws {
+        let command = try CommandLineParser.parse([
+            "render",
+            "--device", "iphone-17-pro",
+            "--screen", "screen.png",
+            "--output", "out/render.png"
+        ], currentDirectory: root)
+
+        guard case .render(let options) = command else {
+            Issue.record("expected render command")
+            return
+        }
+
+        #expect(options.device == .iPhone17Pro)
     }
 
     @Test
