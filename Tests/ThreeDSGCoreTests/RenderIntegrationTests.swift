@@ -17,7 +17,7 @@ struct RenderIntegrationTests {
         let portraitScreenURL = temporaryDirectory.appendingPathComponent("screen-portrait.png")
         let landscapeScreenURL = temporaryDirectory.appendingPathComponent("screen-landscape.png")
         let assetCacheDirectory = temporaryDirectory.appendingPathComponent("asset-cache", isDirectory: true)
-        let renderer = DeviceRenderer(assetCache: AssetCache(directoryURL: assetCacheDirectory))
+        let renderer = DeviceRenderer(assetCache: AssetCache(directoryURL: assetCacheDirectory, reportDownload: { _, _ in }))
         try writeQuadrantImage(to: portraitScreenURL, width: 900, height: 1200)
         try writeQuadrantImage(to: landscapeScreenURL, width: 1200, height: 900)
 

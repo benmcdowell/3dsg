@@ -15,13 +15,16 @@ struct AssetCache: Sendable {
 
     var directoryURL: URL
     var downloader: any AssetDownloading
+    var reportDownload: @Sendable (AssetDescriptor, URL) -> Void
 
     init(
         directoryURL: URL = Self.defaultDirectoryURL,
-        downloader: any AssetDownloading = URLSessionAssetDownloader()
+        downloader: any AssetDownloading = URLSessionAssetDownloader(),
+        reportDownload: @escaping @Sendable (AssetDescriptor, URL) -> Void = Self.reportDownloadToStandardError
     ) {
         self.directoryURL = directoryURL
         self.downloader = downloader
+        self.reportDownload = reportDownload
     }
 
     static var `default`: AssetCache {
@@ -52,6 +55,7 @@ struct AssetCache: Sendable {
             } else {
                 try fileManager.moveItem(at: temporaryURL, to: assetURL)
             }
+            reportDownload(descriptor, assetURL)
             return assetURL
         } catch {
             try? fileManager.removeItem(at: temporaryURL)
@@ -61,6 +65,13 @@ struct AssetCache: Sendable {
                 descriptor.downloadURL,
                 error.localizedDescription
             )
+        }
+    }
+
+    private static func reportDownloadToStandardError(descriptor: AssetDescriptor, assetURL: URL) {
+        let message = "Downloaded USDZ asset \(descriptor.fileName) to \(assetURL.path)\n"
+        if let data = message.data(using: .utf8) {
+            FileHandle.standardError.write(data)
         }
     }
 }

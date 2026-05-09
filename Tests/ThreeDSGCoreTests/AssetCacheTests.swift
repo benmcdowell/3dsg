@@ -26,13 +26,15 @@ struct AssetCacheTests {
         let downloader = StubAssetDownloader { _, destinationURL in
             try data.write(to: destinationURL)
         }
-        let cache = AssetCache(directoryURL: temporaryDirectory, downloader: downloader)
+        let reporter = DownloadReportRecorder()
+        let cache = AssetCache(directoryURL: temporaryDirectory, downloader: downloader, reportDownload: reporter.record)
 
         let assetURL = try cache.assetURL(for: descriptor)
 
         #expect(assetURL == temporaryDirectory.appendingPathComponent("iphone.usdz"))
         #expect(try Data(contentsOf: assetURL) == data)
         #expect(downloader.callCount == 1)
+        #expect(reporter.reports == [DownloadReport(fileName: "iphone.usdz", assetURL: assetURL)])
     }
 
     @Test
@@ -49,13 +51,15 @@ struct AssetCacheTests {
         let downloader = StubAssetDownloader { _, _ in
             throw TestDownloadError.unexpectedDownload
         }
-        let cache = AssetCache(directoryURL: temporaryDirectory, downloader: downloader)
+        let reporter = DownloadReportRecorder()
+        let cache = AssetCache(directoryURL: temporaryDirectory, downloader: downloader, reportDownload: reporter.record)
 
         let resolvedURL = try cache.assetURL(for: descriptor)
 
         #expect(resolvedURL == assetURL)
         #expect(try Data(contentsOf: resolvedURL) == existingData)
         #expect(downloader.callCount == 0)
+        #expect(reporter.reports.isEmpty)
     }
 
     @Test
@@ -69,7 +73,8 @@ struct AssetCacheTests {
         let downloader = StubAssetDownloader { _, _ in
             throw TestDownloadError.expectedFailure
         }
-        let cache = AssetCache(directoryURL: temporaryDirectory, downloader: downloader)
+        let reporter = DownloadReportRecorder()
+        let cache = AssetCache(directoryURL: temporaryDirectory, downloader: downloader, reportDownload: reporter.record)
 
         do {
             _ = try cache.assetURL(for: descriptor)
@@ -85,6 +90,7 @@ struct AssetCacheTests {
             #expect(!FileManager.default.fileExists(atPath: destinationURL.path))
         }
         #expect(downloader.callCount == 1)
+        #expect(reporter.reports.isEmpty)
     }
 
     private func makeTemporaryDirectory() throws -> URL {
@@ -99,6 +105,28 @@ struct AssetCacheTests {
             throw TestDownloadError.badURL
         }
         return AssetDescriptor(fileName: fileName, downloadURL: url)
+    }
+}
+
+private struct DownloadReport: Equatable {
+    var fileName: String
+    var assetURL: URL
+}
+
+private final class DownloadReportRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var values: [DownloadReport] = []
+
+    func record(_ descriptor: AssetDescriptor, _ assetURL: URL) {
+        lock.withLock {
+            values.append(DownloadReport(fileName: descriptor.fileName, assetURL: assetURL))
+        }
+    }
+
+    var reports: [DownloadReport] {
+        lock.withLock {
+            values
+        }
     }
 }
 
