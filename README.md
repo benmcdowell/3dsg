@@ -5,9 +5,9 @@ Render app screenshots onto Apple iPhone/iPad USDZ assets and export a flat PNG.
 
 ## Dependencies
 
-Download the following assets from Apple:
-https://www.apple.com/105/media/us/iphone-17-pro/2025/704d4474-8e63-4ce7-9917-bb47b1ca4ba0/ar/iphone-17-pro-e-sim.usdz
-https://www.apple.com/105/media/us/ipad-pro/2025/adee90db-c01e-430d-b726-fe64c0063f08/ar/ipad-pro-space-black.usdz
+Download the following Apple USDZ assets and place them in `Assets/`:
+https://store.storevideos.cdn-apple.com/v1/store.apple.com/st/1757022617174/iphone17pro-cosmicorange-ar-202509_GEO_US.usdz
+https://store.storevideos.cdn-apple.com/v1/store.apple.com/st/1758636365686/ipad-pro-m5-13in-spaceblack-mgk-black-pencil-pro-ios26.usdz
 
 
 ## Build
@@ -40,4 +40,3 @@ Supported devices:
 Useful options:
 
 - `--rotation X,Y,Z` applies extra 3D rotation in degrees after default framing.
-- `--screen-fit cover|contain|stretch` controls screenshot fitting.

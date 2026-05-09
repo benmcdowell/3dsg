@@ -803,8 +803,8 @@ private struct AssetManifest {
     var screenMaterialName: String
     var usesScreenOverlay: Bool
 
-    let iPhoneProNodeName = "RQNEPvSqUMnJxkk"
-    let iPhoneProMaxNodeName = "jqrLJsSCRSFSMip"
+    let iPhoneProNodeName = "VEyUSflTHtkVqsc"
+    let iPhoneProMaxNodeName = "fXODuXAELCboksi"
     let iPadNodeName = "zRrSLDpdYmKeRJQ"
     let iPadKeyboardNodeName = "PoBqSMmyhhcJsBX"
     let iPadPencilNodeName = "UlaXKoqepypaGMQ"
@@ -821,18 +821,18 @@ private struct AssetManifest {
         switch device {
         case .iPhone17Pro, .iPhone17ProMax:
             AssetManifest(
-                assetFileName: "iphone-17-pro-e-sim.usdz",
-                rootNodeName: "uqyXUHbCOHbdqXa",
+                assetFileName: "iphone17pro-cosmicorange-ar-202509_GEO_US.usdz",
+                rootNodeName: "JjEbhuORCZuXqjs",
                 nativeScreenOrientation: .portrait,
                 textureWidth: 1024,
                 textureHeight: 2048,
-                screenNodeName: "HkNSnYzBPABcqwM",
-                screenMaterialName: "BsXHDwLKqtDOfrW",
+                screenNodeName: "TlsdYMuhscHijgo",
+                screenMaterialName: "vGYRiudxdzSQpSA",
                 usesScreenOverlay: false
             )
         case .iPad:
             AssetManifest(
-                assetFileName: "ipad-pro-space-black.usdz",
+                assetFileName: "ipad-pro-m5-13in-spaceblack-mgk-black-pencil-pro-ios26.usdz",
                 rootNodeName: "COLLuSkZTNlzRUw",
                 nativeScreenOrientation: .landscape,
                 textureWidth: 2732,

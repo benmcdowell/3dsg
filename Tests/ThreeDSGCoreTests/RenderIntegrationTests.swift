@@ -87,8 +87,8 @@ struct RenderIntegrationTests {
 
     private func skipUnlessAssetsExist(_ assetsDirectory: URL) throws {
         let required = [
-            "iphone-17-pro-e-sim.usdz",
-            "ipad-pro-space-black.usdz"
+            "iphone17pro-cosmicorange-ar-202509_GEO_US.usdz",
+            "ipad-pro-m5-13in-spaceblack-mgk-black-pencil-pro-ios26.usdz"
         ]
         for fileName in required {
             let url = assetsDirectory.appendingPathComponent(fileName)
@@ -100,8 +100,8 @@ struct RenderIntegrationTests {
 
     private func assetHashes(in assetsDirectory: URL) throws -> [String: Data] {
         let required = [
-            "iphone-17-pro-e-sim.usdz",
-            "ipad-pro-space-black.usdz"
+            "iphone17pro-cosmicorange-ar-202509_GEO_US.usdz",
+            "ipad-pro-m5-13in-spaceblack-mgk-black-pencil-pro-ios26.usdz"
         ]
         var hashes: [String: Data] = [:]
         for fileName in required {

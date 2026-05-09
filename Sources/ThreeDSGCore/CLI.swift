@@ -29,8 +29,6 @@ public struct CommandLineParser: Sendable {
         var outputPNGURL: URL?
         var outputSize: Dimensions?
         var assetsDirectoryURL = currentDirectory.appendingPathComponent("Assets")
-        var screenFit = ScreenFit.cover
-        var screenFitWasSpecified = false
 
         while let option = parser.nextOption() {
             switch option {
@@ -65,13 +63,6 @@ public struct CommandLineParser: Sendable {
                 outputSize = try Dimensions.parse(try parser.requiredValue(for: option))
             case "--assets-dir":
                 assetsDirectoryURL = resolvePath(try parser.requiredValue(for: option), currentDirectory: currentDirectory)
-            case "--screen-fit":
-                let value = try parser.requiredValue(for: option)
-                guard let parsed = ScreenFit(rawValue: value) else {
-                    throw ThreeDSGError.invalidValue("--screen-fit must be cover, contain, or stretch")
-                }
-                screenFit = parsed
-                screenFitWasSpecified = true
             default:
                 throw ThreeDSGError.usage("unknown option: \(option)\n\n\(Self.usage)")
             }
@@ -102,9 +93,7 @@ public struct CommandLineParser: Sendable {
             screenURL: screenURL,
             outputPNGURL: outputPNGURL,
             outputSize: outputSize,
-            assetsDirectoryURL: assetsDirectoryURL,
-            screenFit: screenFit,
-            screenFitWasSpecified: screenFitWasSpecified
+            assetsDirectoryURL: assetsDirectoryURL
         )
         return .render(options)
     }
@@ -119,7 +108,6 @@ public struct CommandLineParser: Sendable {
       --rotation X,Y,Z                       Extra device rotation in degrees. Default: 0,0,0.
       --size WIDTHxHEIGHT                    Max output dimensions after transparent edge trimming.
       --assets-dir path                      Default: ./Assets.
-      --screen-fit cover|contain|stretch     Default: cover for iPhone; stretch for iPad.
       -h, --help                             Show this help.
 
     Output:

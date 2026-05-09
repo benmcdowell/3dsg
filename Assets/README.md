@@ -2,5 +2,5 @@
 
 The renderer expects these filenames:
 
-- `iphone-17-pro-e-sim.usdz`
-- `ipad-pro-space-black.usdz`
+- `iphone17pro-cosmicorange-ar-202509_GEO_US.usdz`
+- `ipad-pro-m5-13in-spaceblack-mgk-black-pencil-pro-ios26.usdz`
