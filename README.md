@@ -10,10 +10,61 @@ The Apple USDZ assets are managed automatically. If the required asset is missin
 `~/Library/Application Support/com.benmcdowell.3dsg/usdz`
 
 
+## Install From Source
+
+```sh
+git clone https://github.com/benmcdowell/3dsg.git
+cd 3dsg
+make install
+3dsg --version
+```
+
+`make install` builds the release executable and installs it to `$HOME/.local/bin/3dsg` by default. Make sure `$HOME/.local/bin` is on your `PATH`.
+
+You can choose another install location:
+
+```sh
+make install BINDIR=/usr/local/bin
+```
+
+When overriding `BINDIR`, use `$HOME` instead of `~`:
+
+```sh
+make install BINDIR=$HOME/.local/bin
+```
+
+`make` passes the value into quoted shell commands, so `BINDIR=~/.local/bin` may create a literal `~` directory instead of expanding to your home directory.
+
+Remove the installed executable with:
+
+```sh
+make uninstall
+```
+
+## Install From GitHub Releases
+
+Download the signed and notarized macOS release zip:
+
+```sh
+curl -LO https://github.com/benmcdowell/3dsg/releases/download/v0.1.0/3dsg-0.1.0-macos-universal.zip
+unzip 3dsg-0.1.0-macos-universal.zip
+mkdir -p "$HOME/.local/bin"
+mv 3dsg "$HOME/.local/bin/"
+3dsg --version
+```
+
+Release binaries are signed with a Developer ID certificate and submitted to Apple's notarization service.
+
 ## Build
 
 ```sh
 swift build
+```
+
+Run tests:
+
+```sh
+make test
 ```
 
 ## Usage
@@ -39,3 +90,24 @@ Useful options:
 
 - `--rotation X,Y,Z` applies extra 3D rotation in degrees after default framing.
 - `--version` prints the installed `3dsg` version.
+
+## Maintainer Release
+
+Releases are built locally and published manually to GitHub Releases.
+
+Prerequisites:
+
+- Apple Developer Program membership.
+- A `Developer ID Application` certificate installed in the local keychain.
+- Notary credentials stored with `xcrun notarytool store-credentials`.
+
+Create a signed and notarized zip:
+
+```sh
+VERSION=0.1.0 \
+CODESIGN_IDENTITY="Developer ID Application: ..." \
+NOTARYTOOL_PROFILE=3dsg-notarytool \
+scripts/release-macos.sh
+```
+
+The script verifies that `VERSION` matches `ToolVersion.current`, builds a universal release binary, signs it with hardened runtime, packages `dist/3dsg-$VERSION-macos-universal.zip`, submits it for notarization, and writes `dist/SHA256SUMS`.
