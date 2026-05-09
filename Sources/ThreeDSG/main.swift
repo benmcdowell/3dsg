@@ -8,6 +8,8 @@ do {
     switch command {
     case .help:
         print(CommandLineParser.usage)
+    case .version:
+        print(ToolVersion.displayString)
     case .render(let options):
         let result = try DeviceRenderer().render(options)
         print("PNG:  \(result.pngURL.path)")

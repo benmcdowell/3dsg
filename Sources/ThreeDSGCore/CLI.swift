@@ -3,6 +3,7 @@ import Foundation
 public enum Command: Equatable, Sendable {
     case render(RenderOptions)
     case help
+    case version
 }
 
 public struct CommandLineParser: Sendable {
@@ -13,6 +14,9 @@ public struct CommandLineParser: Sendable {
 
         if firstArgument == "-h" || firstArgument == "--help" {
             return .help
+        }
+        if firstArgument == "-v" || firstArgument == "--version" || firstArgument == "version" {
+            return .version
         }
 
         let renderArguments: [String]
@@ -37,6 +41,8 @@ public struct CommandLineParser: Sendable {
             switch option {
             case "-h", "--help":
                 return .help
+            case "-v", "--version":
+                return .version
             case "--device":
                 let value = try parser.requiredValue(for: option)
                 guard let parsed = Device(rawValue: value) else {
@@ -100,6 +106,7 @@ public struct CommandLineParser: Sendable {
       --color cosmic-orange|deep-blue|silver iPhone only. Default: cosmic-orange.
       --rotation X,Y,Z                       Extra device rotation in degrees. Default: 0,0,0.
       --size WIDTHxHEIGHT                    Max output dimensions after transparent edge trimming. Default: --screen dimensions.
+      -v, --version                          Show the 3dsg version.
       -h, --help                             Show this help.
 
     Output:

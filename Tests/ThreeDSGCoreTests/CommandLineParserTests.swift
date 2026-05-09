@@ -7,6 +7,14 @@ struct CommandLineParserTests {
     private let root = URL(fileURLWithPath: "/tmp/3dsg-tests", isDirectory: true)
 
     @Test
+    func parsesVersionCommands() throws {
+        #expect(try CommandLineParser.parse(["--version"], currentDirectory: root) == .version)
+        #expect(try CommandLineParser.parse(["-v"], currentDirectory: root) == .version)
+        #expect(try CommandLineParser.parse(["version"], currentDirectory: root) == .version)
+        #expect(try CommandLineParser.parse(["render", "--version"], currentDirectory: root) == .version)
+    }
+
+    @Test
     func parsesOptionsWithoutRenderCommandWithDefaults() throws {
         let command = try CommandLineParser.parse([
             "--device", "iphone-17-pro",

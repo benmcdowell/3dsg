@@ -38,3 +38,4 @@ Supported devices:
 Useful options:
 
 - `--rotation X,Y,Z` applies extra 3D rotation in degrees after default framing.
+- `--version` prints the installed `3dsg` version.
