@@ -119,7 +119,6 @@ public struct RenderOptions: Equatable, Sendable {
     public var screenURL: URL
     public var outputPNGURL: URL
     public var outputSize: Dimensions?
-    public var assetsDirectoryURL: URL
     public var screenFit: ScreenFit
     public var screenFitWasSpecified: Bool
     public var showKeyboard: Bool
@@ -132,7 +131,6 @@ public struct RenderOptions: Equatable, Sendable {
         screenURL: URL,
         outputPNGURL: URL,
         outputSize: Dimensions? = nil,
-        assetsDirectoryURL: URL,
         screenFit: ScreenFit = .cover,
         screenFitWasSpecified: Bool = false,
         showKeyboard: Bool = false,
@@ -144,7 +142,6 @@ public struct RenderOptions: Equatable, Sendable {
         self.screenURL = screenURL
         self.outputPNGURL = outputPNGURL
         self.outputSize = outputSize
-        self.assetsDirectoryURL = assetsDirectoryURL
         self.screenFit = screenFit
         self.screenFitWasSpecified = screenFitWasSpecified
         self.showKeyboard = showKeyboard
@@ -163,6 +160,7 @@ public enum ThreeDSGError: Error, LocalizedError {
     case missingFile(URL)
     case unsupportedOption(String)
     case assetNotFound(String, URL)
+    case assetDownloadFailed(String, URL, URL, String)
     case sceneNodeNotFound(String)
     case imageLoadFailed(URL)
     case imageWriteFailed(URL)
@@ -180,6 +178,8 @@ public enum ThreeDSGError: Error, LocalizedError {
             "file not found: \(url.path)"
         case .assetNotFound(let name, let url):
             "asset \(name) not found at \(url.path)"
+        case .assetDownloadFailed(let name, let destinationURL, let sourceURL, let reason):
+            "asset \(name) not found at \(destinationURL.path) and could not be downloaded from \(sourceURL.absoluteString): \(reason)"
         case .sceneNodeNotFound(let name):
             "required scene node not found: \(name)"
         case .imageLoadFailed(let url):

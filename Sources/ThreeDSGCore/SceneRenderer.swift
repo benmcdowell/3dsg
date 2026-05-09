@@ -10,15 +10,24 @@ public struct DeviceRenderer: Sendable {
 
     private let internalRenderScale: Double
     private let internalRenderSizeOverride: Dimensions?
+    private let assetCache: AssetCache
 
     public init() {
         self.internalRenderScale = Self.defaultInternalRenderScale
         self.internalRenderSizeOverride = nil
+        self.assetCache = .default
     }
 
-    init(internalRenderSize: Dimensions) {
+    init(internalRenderSize: Dimensions, assetCache: AssetCache = .default) {
         self.internalRenderScale = 1
         self.internalRenderSizeOverride = internalRenderSize
+        self.assetCache = assetCache
+    }
+
+    init(assetCache: AssetCache) {
+        self.internalRenderScale = Self.defaultInternalRenderScale
+        self.internalRenderSizeOverride = nil
+        self.assetCache = assetCache
     }
 
     public func render(_ options: RenderOptions) throws -> RenderResult {
@@ -33,7 +42,7 @@ public struct DeviceRenderer: Sendable {
         }
 
         let manifest = AssetManifest.manifest(for: options.device)
-        let assetURL = options.assetsDirectoryURL.appendingPathComponent(manifest.assetFileName)
+        let assetURL = try assetCache.assetURL(for: manifest.assetDescriptor)
         let sceneURL = try preparedSceneURL(assetURL: assetURL, manifest: manifest, options: options, temporaryDirectory: temporaryDirectory)
         let sourceScene = try withoutSceneKitDiagnostics {
             try SCNScene(url: sceneURL, options: nil)
@@ -98,11 +107,6 @@ public struct DeviceRenderer: Sendable {
         }
         guard options.outputPNGURL.pathExtension.lowercased() == "png" else {
             throw ThreeDSGError.invalidValue("--output must point to a .png file")
-        }
-        let manifest = AssetManifest.manifest(for: options.device)
-        let assetURL = options.assetsDirectoryURL.appendingPathComponent(manifest.assetFileName)
-        guard fileManager.fileExists(atPath: assetURL.path) else {
-            throw ThreeDSGError.assetNotFound(manifest.assetFileName, assetURL)
         }
     }
 
@@ -897,6 +901,7 @@ private struct ScreenPlaneMetrics {
 
 private struct AssetManifest {
     var assetFileName: String
+    var assetDownloadURL: URL
     var rootNodeName: String
     var nativeScreenOrientation: DeviceOrientation
     var textureWidth: Int
@@ -919,11 +924,16 @@ private struct AssetManifest {
         }
     }
 
+    var assetDescriptor: AssetDescriptor {
+        AssetDescriptor(fileName: assetFileName, downloadURL: assetDownloadURL)
+    }
+
     static func manifest(for device: Device) -> AssetManifest {
         switch device {
         case .iPhone17Pro, .iPhone17ProMax:
             AssetManifest(
                 assetFileName: "iphone17pro-cosmicorange-ar-202509_GEO_US.usdz",
+                assetDownloadURL: URL(string: "https://store.storevideos.cdn-apple.com/v1/store.apple.com/st/1757022617174/iphone17pro-cosmicorange-ar-202509_GEO_US.usdz")!,
                 rootNodeName: "JjEbhuORCZuXqjs",
                 nativeScreenOrientation: .portrait,
                 textureWidth: 1024,
@@ -935,6 +945,7 @@ private struct AssetManifest {
         case .iPad:
             AssetManifest(
                 assetFileName: "ipad-pro-m5-13in-spaceblack-mgk-black-pencil-pro-ios26.usdz",
+                assetDownloadURL: URL(string: "https://store.storevideos.cdn-apple.com/v1/store.apple.com/st/1758636365686/ipad-pro-m5-13in-spaceblack-mgk-black-pencil-pro-ios26.usdz")!,
                 rootNodeName: "COLLuSkZTNlzRUw",
                 nativeScreenOrientation: .landscape,
                 textureWidth: 2732,

@@ -32,7 +32,6 @@ public struct CommandLineParser: Sendable {
         var screenURL: URL?
         var outputPNGURL: URL?
         var outputSize: Dimensions?
-        var assetsDirectoryURL = currentDirectory.appendingPathComponent("Assets")
 
         while let option = parser.nextOption() {
             switch option {
@@ -62,7 +61,7 @@ public struct CommandLineParser: Sendable {
             case "--size":
                 outputSize = try Dimensions.parse(try parser.requiredValue(for: option))
             case "--assets-dir":
-                assetsDirectoryURL = resolvePath(try parser.requiredValue(for: option), currentDirectory: currentDirectory)
+                throw ThreeDSGError.unsupportedOption("--assets-dir has been removed; USDZ assets are managed in ~/Library/Application Support/com.benmcdowell.3dsg/usdz")
             default:
                 throw ThreeDSGError.usage("unknown option: \(option)\n\n\(Self.usage)")
             }
@@ -88,8 +87,7 @@ public struct CommandLineParser: Sendable {
             rotation: rotation,
             screenURL: screenURL,
             outputPNGURL: outputPNGURL,
-            outputSize: outputSize,
-            assetsDirectoryURL: assetsDirectoryURL
+            outputSize: outputSize
         )
         return .render(options)
     }
@@ -102,7 +100,6 @@ public struct CommandLineParser: Sendable {
       --color cosmic-orange|deep-blue|silver iPhone only. Default: cosmic-orange.
       --rotation X,Y,Z                       Extra device rotation in degrees. Default: 0,0,0.
       --size WIDTHxHEIGHT                    Max output dimensions after transparent edge trimming. Default: --screen dimensions.
-      --assets-dir path                      Default: ./Assets.
       -h, --help                             Show this help.
 
     Output:

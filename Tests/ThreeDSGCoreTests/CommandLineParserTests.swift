@@ -34,8 +34,7 @@ struct CommandLineParserTests {
             "--rotation", "12,0,-45",
             "--screen", "/tmp/screen.png",
             "--output", "/tmp/render.png",
-            "--size", "800x600",
-            "--assets-dir", "/tmp/assets"
+            "--size", "800x600"
         ], currentDirectory: root)
 
         guard case .render(let options) = command else {
@@ -50,7 +49,6 @@ struct CommandLineParserTests {
         #expect(options.screenFitWasSpecified == false)
         let expectedSize = try Dimensions(width: 800, height: 600)
         #expect(options.outputSize == expectedSize)
-        #expect(options.assetsDirectoryURL.path == "/tmp/assets")
     }
 
     @Test
@@ -179,6 +177,18 @@ struct CommandLineParserTests {
                 "--output", "render.png",
                 "--size", "800x600",
                 "--screen-fit", "contain"
+            ], currentDirectory: root)
+        }
+    }
+
+    @Test
+    func rejectsAssetsDirectoryOption() throws {
+        #expect(throws: ThreeDSGError.self) {
+            try CommandLineParser.parse([
+                "--device", "iphone-17-pro",
+                "--screen", "screen.png",
+                "--output", "render.png",
+                "--assets-dir", "/tmp/assets"
             ], currentDirectory: root)
         }
     }

@@ -3,11 +3,11 @@
 Render app screenshots onto Apple iPhone/iPad USDZ assets and export a flat PNG.
 
 
-## Dependencies
+## Assets
 
-Download the following Apple USDZ assets and place them in `Assets/`:
-https://store.storevideos.cdn-apple.com/v1/store.apple.com/st/1757022617174/iphone17pro-cosmicorange-ar-202509_GEO_US.usdz
-https://store.storevideos.cdn-apple.com/v1/store.apple.com/st/1758636365686/ipad-pro-m5-13in-spaceblack-mgk-black-pencil-pro-ios26.usdz
+The Apple USDZ assets are managed automatically. If the required asset is missing when the tool runs, it is downloaded from Apple and saved to:
+
+`~/Library/Application Support/com.benmcdowell.3dsg/usdz`
 
 
 ## Build
@@ -26,7 +26,6 @@ swift run 3dsg \
   --output outputs/render.png
 ```
 
-The original files in `Assets/` are loaded read-only and are not modified.
 The device orientation is inferred from the `--screen` image dimensions: portrait images render portrait, and landscape images render landscape. For assets with a different native orientation, the screenshot is rotated internally before it is placed on the screen.
 Renders are produced internally at a size derived from the requested output size, trimmed to the non-transparent pixels, and then scaled so the final PNG fits within the max dimensions. Use `--size WIDTHxHEIGHT` to choose those max dimensions; when omitted, the screenshot dimensions are used.
 

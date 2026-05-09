@@ -5,14 +5,8 @@ import Testing
 
 @Suite
 struct RenderIntegrationTests {
-    private let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
-
     @Test(.timeLimit(.minutes(2)))
     func rendersCurrentAppleAssets() throws {
-        let assetsDirectory = root.appendingPathComponent("Assets", isDirectory: true)
-        try skipUnlessAssetsExist(assetsDirectory)
-
-        let beforeHashes = try assetHashes(in: assetsDirectory)
         let temporaryDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("3dsg-integration-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
@@ -22,6 +16,8 @@ struct RenderIntegrationTests {
 
         let portraitScreenURL = temporaryDirectory.appendingPathComponent("screen-portrait.png")
         let landscapeScreenURL = temporaryDirectory.appendingPathComponent("screen-landscape.png")
+        let assetCacheDirectory = temporaryDirectory.appendingPathComponent("asset-cache", isDirectory: true)
+        let renderer = DeviceRenderer(assetCache: AssetCache(directoryURL: assetCacheDirectory))
         try writeQuadrantImage(to: portraitScreenURL, width: 900, height: 1200)
         try writeQuadrantImage(to: landscapeScreenURL, width: 1200, height: 900)
 
@@ -31,8 +27,7 @@ struct RenderIntegrationTests {
                 color: .deepBlue,
                 screenURL: portraitScreenURL,
                 outputPNGURL: temporaryDirectory.appendingPathComponent("iphone-pro.png"),
-                outputSize: try Dimensions(width: 360, height: 480),
-                assetsDirectoryURL: assetsDirectory
+                outputSize: try Dimensions(width: 360, height: 480)
             ),
             RenderOptions(
                 device: .iPhone17ProMax,
@@ -40,36 +35,32 @@ struct RenderIntegrationTests {
                 rotation: Rotation(x: 8, y: -12, z: 0),
                 screenURL: landscapeScreenURL,
                 outputPNGURL: temporaryDirectory.appendingPathComponent("iphone-pro-max.png"),
-                outputSize: try Dimensions(width: 480, height: 360),
-                assetsDirectoryURL: assetsDirectory
+                outputSize: try Dimensions(width: 480, height: 360)
             ),
             RenderOptions(
                 device: .iPad,
                 screenURL: portraitScreenURL,
                 outputPNGURL: temporaryDirectory.appendingPathComponent("ipad-portrait.png"),
-                outputSize: try Dimensions(width: 360, height: 480),
-                assetsDirectoryURL: assetsDirectory
+                outputSize: try Dimensions(width: 360, height: 480)
             ),
             RenderOptions(
                 device: .iPad,
                 screenURL: landscapeScreenURL,
                 outputPNGURL: temporaryDirectory.appendingPathComponent("ipad.png"),
-                outputSize: try Dimensions(width: 480, height: 360),
-                assetsDirectoryURL: assetsDirectory
+                outputSize: try Dimensions(width: 480, height: 360)
             ),
             RenderOptions(
                 device: .iPad,
                 screenURL: landscapeScreenURL,
                 outputPNGURL: temporaryDirectory.appendingPathComponent("ipad-accessories.png"),
                 outputSize: try Dimensions(width: 480, height: 360),
-                assetsDirectoryURL: assetsDirectory,
                 showKeyboard: true,
                 showPencil: true
             )
         ]
 
         for renderCase in cases {
-            let result = try DeviceRenderer().render(renderCase)
+            let result = try renderer.render(renderCase)
             #expect(FileManager.default.fileExists(atPath: result.pngURL.path))
             let sidecarUSDZ = result.pngURL.deletingPathExtension().appendingPathExtension("usdz")
             #expect(!FileManager.default.fileExists(atPath: sidecarUSDZ.path))
@@ -83,40 +74,13 @@ struct RenderIntegrationTests {
         let defaultSizeRender = RenderOptions(
             device: .iPhone17Pro,
             screenURL: portraitScreenURL,
-            outputPNGURL: temporaryDirectory.appendingPathComponent("iphone-default-size.png"),
-            assetsDirectoryURL: assetsDirectory
+            outputPNGURL: temporaryDirectory.appendingPathComponent("iphone-default-size.png")
         )
-        let defaultSizeResult = try DeviceRenderer().render(defaultSizeRender)
+        let defaultSizeResult = try renderer.render(defaultSizeRender)
         try assertPNG(defaultSizeResult.pngURL, fitsWithin: Dimensions(width: 900, height: 1200))
 
-        let afterHashes = try assetHashes(in: assetsDirectory)
-        #expect(beforeHashes == afterHashes)
-    }
-
-    private func skipUnlessAssetsExist(_ assetsDirectory: URL) throws {
-        let required = [
-            "iphone17pro-cosmicorange-ar-202509_GEO_US.usdz",
-            "ipad-pro-m5-13in-spaceblack-mgk-black-pencil-pro-ios26.usdz"
-        ]
-        for fileName in required {
-            let url = assetsDirectory.appendingPathComponent(fileName)
-            guard FileManager.default.fileExists(atPath: url.path) else {
-                throw ThreeDSGError.assetNotFound(fileName, url)
-            }
-        }
-    }
-
-    private func assetHashes(in assetsDirectory: URL) throws -> [String: Data] {
-        let required = [
-            "iphone17pro-cosmicorange-ar-202509_GEO_US.usdz",
-            "ipad-pro-m5-13in-spaceblack-mgk-black-pencil-pro-ios26.usdz"
-        ]
-        var hashes: [String: Data] = [:]
-        for fileName in required {
-            let url = assetsDirectory.appendingPathComponent(fileName)
-            hashes[fileName] = try Data(contentsOf: url)
-        }
-        return hashes
+        #expect(FileManager.default.fileExists(atPath: assetCacheDirectory.appendingPathComponent("iphone17pro-cosmicorange-ar-202509_GEO_US.usdz").path))
+        #expect(FileManager.default.fileExists(atPath: assetCacheDirectory.appendingPathComponent("ipad-pro-m5-13in-spaceblack-mgk-black-pencil-pro-ios26.usdz").path))
     }
 
     private func writeQuadrantImage(to url: URL, width: Int, height: Int) throws {
