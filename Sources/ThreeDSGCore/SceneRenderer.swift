@@ -46,7 +46,13 @@ public struct DeviceRenderer: Sendable {
         workingScene.rootNode.addChildNode(wrapper)
 
         let selection = try selectAndMoveDeviceNodes(from: sourceScene, into: wrapper, manifest: manifest, options: options)
-        let screenTexture = try screenTexture(for: selection.screenNode, manifest: manifest, options: options)
+        let screenOrientation = try ImageFitter.orientation(ofImageAt: options.screenURL)
+        let screenTexture = try screenTexture(
+            for: selection.screenNode,
+            manifest: manifest,
+            screenOrientation: screenOrientation,
+            options: options
+        )
         if manifest.usesScreenOverlay {
             try addScreenOverlay(
                 to: wrapper,
@@ -58,7 +64,7 @@ public struct DeviceRenderer: Sendable {
             replaceScreenMaterial(on: selection.screenNode, materialName: manifest.screenMaterialName, texture: screenTexture)
         }
 
-        try orient(wrapper: wrapper, screenNode: selection.screenNode, options: options)
+        try orient(wrapper: wrapper, screenNode: selection.screenNode, screenOrientation: screenOrientation, options: options)
         center(wrapper)
 
         let renderSize = try internalRenderSize(for: options.outputSize)
@@ -263,9 +269,14 @@ public struct DeviceRenderer: Sendable {
         }
     }
 
-    private func screenTexture(for screenNode: SCNNode, manifest: AssetManifest, options: RenderOptions) throws -> NSImage {
+    private func screenTexture(
+        for screenNode: SCNNode,
+        manifest: AssetManifest,
+        screenOrientation: DeviceOrientation,
+        options: RenderOptions
+    ) throws -> NSImage {
         let textureSize = try screenTextureSize(for: screenNode, manifest: manifest)
-        let rotate = options.orientation.rotationQuarterTurns(toNativeOrientation: manifest.nativeScreenOrientation)
+        let rotate = screenOrientation.rotationQuarterTurns(toNativeOrientation: manifest.nativeScreenOrientation)
         let fit = effectiveScreenFit(for: manifest, options: options)
         return try ImageFitter.fittedImage(
             from: options.screenURL,
@@ -386,7 +397,12 @@ public struct DeviceRenderer: Sendable {
         parent.addChildNode(overlay)
     }
 
-    private func orient(wrapper: SCNNode, screenNode: SCNNode, options: RenderOptions) throws {
+    private func orient(
+        wrapper: SCNNode,
+        screenNode: SCNNode,
+        screenOrientation: DeviceOrientation,
+        options: RenderOptions
+    ) throws {
         var normal = try screenNormal(screenNode)
         if simd_dot(normal, SIMD3<Float>(0, 0, 1)) < 0 {
             normal = -normal
@@ -395,7 +411,7 @@ public struct DeviceRenderer: Sendable {
         wrapper.simdOrientation = frontFacing * wrapper.simdOrientation
 
         let majorAxis = try projectedMajorAxis(for: screenNode)
-        let targetAxis = options.orientation == .landscape
+        let targetAxis = screenOrientation == .landscape
             ? SIMD2<Float>(1, 0)
             : SIMD2<Float>(0, 1)
         let adjustedMajor = simd_dot(majorAxis, targetAxis) < 0 ? -majorAxis : majorAxis

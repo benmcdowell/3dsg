@@ -21,7 +21,6 @@ public struct CommandLineParser: Sendable {
 
         var parser = OptionParser(Array(arguments.dropFirst()))
         var device: Device?
-        var orientation: DeviceOrientation?
         var color: IPhoneColor?
         var colorWasProvided = false
         var rotation = Rotation.zero
@@ -41,11 +40,7 @@ public struct CommandLineParser: Sendable {
                 }
                 device = parsed
             case "--orientation":
-                let value = try parser.requiredValue(for: option)
-                guard let parsed = DeviceOrientation(rawValue: value) else {
-                    throw ThreeDSGError.invalidValue("--orientation must be portrait or landscape")
-                }
-                orientation = parsed
+                throw ThreeDSGError.unsupportedOption("--orientation has been removed; orientation is inferred from the --screen image dimensions")
             case "--color":
                 let value = try parser.requiredValue(for: option)
                 guard let parsed = IPhoneColor(rawValue: value) else {
@@ -87,7 +82,6 @@ public struct CommandLineParser: Sendable {
 
         let options = RenderOptions(
             device: device,
-            orientation: orientation,
             color: color ?? .cosmicOrange,
             rotation: rotation,
             screenURL: screenURL,
@@ -103,7 +97,6 @@ public struct CommandLineParser: Sendable {
       3dsg render --device iphone-17-pro|iphone-17-pro-max|ipad-pro-13-inch --screen path --output path.png --size WIDTHxHEIGHT [options]
 
     Options:
-      --orientation portrait|landscape       Defaults to portrait for iPhone and landscape for iPad.
       --color cosmic-orange|deep-blue|silver iPhone only. Default: cosmic-orange.
       --rotation X,Y,Z                       Extra device rotation in degrees. Default: 0,0,0.
       --size WIDTHxHEIGHT                    Max output dimensions after transparent edge trimming.

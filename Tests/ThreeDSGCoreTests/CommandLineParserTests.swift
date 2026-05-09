@@ -22,7 +22,6 @@ struct CommandLineParserTests {
         }
 
         #expect(options.device == .iPhone17Pro)
-        #expect(options.orientation == .portrait)
         #expect(options.color == .cosmicOrange)
         #expect(options.screenFit == .cover)
         #expect(options.screenFitWasSpecified == false)
@@ -35,7 +34,6 @@ struct CommandLineParserTests {
         let command = try CommandLineParser.parse([
             "render",
             "--device=iphone-17-pro-max",
-            "--orientation=landscape",
             "--color=deep-blue",
             "--rotation", "12,0,-45",
             "--screen", "/tmp/screen.png",
@@ -50,7 +48,6 @@ struct CommandLineParserTests {
         }
 
         #expect(options.device == .iPhone17ProMax)
-        #expect(options.orientation == .landscape)
         #expect(options.color == .deepBlue)
         #expect(options.rotation == Rotation(x: 12, y: 0, z: -45))
         #expect(options.screenFit == .cover)
@@ -89,7 +86,6 @@ struct CommandLineParserTests {
         }
 
         #expect(options.device == .iPad)
-        #expect(options.orientation == .landscape)
     }
 
     @Test
@@ -140,6 +136,20 @@ struct CommandLineParserTests {
                 "--output", "render.png",
                 "--size", "800x600",
                 "--show-pencil"
+            ], currentDirectory: root)
+        }
+    }
+
+    @Test
+    func rejectsOrientationOption() throws {
+        #expect(throws: ThreeDSGError.self) {
+            try CommandLineParser.parse([
+                "render",
+                "--device", "iphone-17-pro",
+                "--orientation", "portrait",
+                "--screen", "screen.png",
+                "--output", "render.png",
+                "--size", "800x600"
             ], currentDirectory: root)
         }
     }

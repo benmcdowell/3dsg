@@ -64,6 +64,35 @@ struct ImageFitterTests {
         #expect(alpha(atX: 50, y: 39, in: rep) > 200)
     }
 
+    @Test
+    func infersOrientationFromImageDimensions() throws {
+        let temporaryDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("3dsg-image-fitter-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(at: temporaryDirectory)
+        }
+
+        let portraitURL = temporaryDirectory.appendingPathComponent("portrait.png")
+        let landscapeURL = temporaryDirectory.appendingPathComponent("landscape.png")
+        let squareURL = temporaryDirectory.appendingPathComponent("square.png")
+        try writeImage(to: portraitURL, width: 400, height: 800)
+        try writeImage(to: landscapeURL, width: 800, height: 400)
+        try writeImage(to: squareURL, width: 500, height: 500)
+
+        #expect(try ImageFitter.orientation(ofImageAt: portraitURL) == .portrait)
+        #expect(try ImageFitter.orientation(ofImageAt: landscapeURL) == .landscape)
+        #expect(throws: ThreeDSGError.self) {
+            try ImageFitter.orientation(ofImageAt: squareURL)
+        }
+    }
+
+    private func writeImage(to url: URL, width: Int, height: Int) throws {
+        let image = try makeImage(width: width, height: height, color: .red)
+        let nsImage = NSImage(cgImage: image, size: NSSize(width: width, height: height))
+        try ImageFitter.pngData(from: nsImage).write(to: url)
+    }
+
     private func makeImage(width: Int, height: Int, color: NSColor) throws -> CGImage {
         guard let context = CGContext(
             data: nil,

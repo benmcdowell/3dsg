@@ -28,7 +28,6 @@ struct RenderIntegrationTests {
         let cases: [RenderOptions] = [
             RenderOptions(
                 device: .iPhone17Pro,
-                orientation: .portrait,
                 color: .deepBlue,
                 screenURL: portraitScreenURL,
                 outputPNGURL: temporaryDirectory.appendingPathComponent("iphone-pro.png"),
@@ -37,7 +36,6 @@ struct RenderIntegrationTests {
             ),
             RenderOptions(
                 device: .iPhone17ProMax,
-                orientation: .landscape,
                 color: .silver,
                 rotation: Rotation(x: 8, y: -12, z: 0),
                 screenURL: landscapeScreenURL,
@@ -47,7 +45,6 @@ struct RenderIntegrationTests {
             ),
             RenderOptions(
                 device: .iPad,
-                orientation: .portrait,
                 screenURL: portraitScreenURL,
                 outputPNGURL: temporaryDirectory.appendingPathComponent("ipad-portrait.png"),
                 outputSize: try Dimensions(width: 360, height: 480),
@@ -55,7 +52,6 @@ struct RenderIntegrationTests {
             ),
             RenderOptions(
                 device: .iPad,
-                orientation: .landscape,
                 screenURL: landscapeScreenURL,
                 outputPNGURL: temporaryDirectory.appendingPathComponent("ipad.png"),
                 outputSize: try Dimensions(width: 480, height: 360),
@@ -63,7 +59,6 @@ struct RenderIntegrationTests {
             ),
             RenderOptions(
                 device: .iPad,
-                orientation: .landscape,
                 screenURL: landscapeScreenURL,
                 outputPNGURL: temporaryDirectory.appendingPathComponent("ipad-accessories.png"),
                 outputSize: try Dimensions(width: 480, height: 360),

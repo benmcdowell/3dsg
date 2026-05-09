@@ -14,15 +14,6 @@ public enum Device: String, CaseIterable, Sendable {
         }
     }
 
-    public var defaultOrientation: DeviceOrientation {
-        switch self {
-        case .iPhone17Pro, .iPhone17ProMax:
-            .portrait
-        case .iPad:
-            .landscape
-        }
-    }
-
     var assetNormalizationRotation: Rotation {
         switch self {
         case .iPhone17Pro:
@@ -123,7 +114,6 @@ public struct Rotation: Equatable, Sendable {
 
 public struct RenderOptions: Equatable, Sendable {
     public var device: Device
-    public var orientation: DeviceOrientation
     public var color: IPhoneColor
     public var rotation: Rotation
     public var screenURL: URL
@@ -137,7 +127,6 @@ public struct RenderOptions: Equatable, Sendable {
 
     public init(
         device: Device,
-        orientation: DeviceOrientation? = nil,
         color: IPhoneColor = .cosmicOrange,
         rotation: Rotation = .zero,
         screenURL: URL,
@@ -150,7 +139,6 @@ public struct RenderOptions: Equatable, Sendable {
         showPencil: Bool = false
     ) {
         self.device = device
-        self.orientation = orientation ?? device.defaultOrientation
         self.color = color
         self.rotation = rotation
         self.screenURL = screenURL
