@@ -17,7 +17,7 @@ usage() {
   cat <<'EOF'
 Usage:
   scripts/release-macos.sh --help
-  VERSION=0.1.0 CODESIGN_IDENTITY="Developer ID Application: ..." NOTARYTOOL_PROFILE=3dsg-notarytool scripts/release-macos.sh
+  VERSION=0.1.1 CODESIGN_IDENTITY="Developer ID Application: ..." NOTARYTOOL_PROFILE=3dsg-notarytool scripts/release-macos.sh
 
 Build, sign, notarize, package, and publish a macOS release for 3dsg.
 
@@ -46,7 +46,7 @@ Optional environment:
                         over RELEASE_NOTES.
 
 Prerequisites:
-  - swift, codesign, ditto, gh, shasum, and xcrun must be on PATH.
+  - swift, codesign, ditto, gh, shasum, xcrun, and zipinfo must be on PATH.
   - gh must be authenticated: gh auth login
   - A Developer ID Application certificate must be installed locally.
   - Notary credentials must be stored in the named NOTARYTOOL_PROFILE.
@@ -55,7 +55,7 @@ Prerequisites:
   - The GitHub release tag v$VERSION must not already exist.
 
 Example:
-  VERSION=0.1.0 \
+  VERSION=0.1.1 \
   CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
   NOTARYTOOL_PROFILE=3dsg-notarytool \
   GH_REPO=benmcdowell/3dsg \
@@ -79,6 +79,17 @@ require_command() {
   local name="$1"
   if ! command -v "$name" >/dev/null 2>&1; then
     fail "$name is required but was not found on PATH"
+  fi
+}
+
+verify_archive_contents() {
+  local archive="$1"
+  local listing
+
+  listing="$(zipinfo -1 "$archive")" || fail "could not inspect archive contents"
+  if [[ "$listing" != "$PRODUCT" ]]; then
+    printf 'archive contents:\n%s\n' "$listing" >&2
+    fail "release archive must contain only $PRODUCT at the archive root"
   fi
 }
 
@@ -119,6 +130,7 @@ require_command ditto
 require_command gh
 require_command shasum
 require_command xcrun
+require_command zipinfo
 
 cd "$REPO_ROOT"
 
@@ -195,10 +207,8 @@ archive="$DIST_DIR/$PRODUCT-$VERSION-macos-universal.zip"
 rm -f "$archive"
 
 printf 'Packaging %s...\n' "$archive"
-(
-  cd "$STAGING_DIR"
-  ditto -c -k --keepParent "$PRODUCT" "$archive"
-)
+ditto -c -k --norsrc --noextattr "$STAGING_DIR" "$archive"
+verify_archive_contents "$archive"
 
 printf 'Submitting %s for notarization...\n' "$archive"
 xcrun notarytool submit "$archive" \

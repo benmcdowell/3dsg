@@ -46,8 +46,8 @@ make uninstall
 Download the signed and notarized macOS release zip:
 
 ```sh
-curl -LO https://github.com/benmcdowell/3dsg/releases/download/v0.1.0/3dsg-0.1.0-macos-universal.zip
-unzip 3dsg-0.1.0-macos-universal.zip
+curl -LO https://github.com/benmcdowell/3dsg/releases/download/v0.1.1/3dsg-0.1.1-macos-universal.zip
+unzip 3dsg-0.1.1-macos-universal.zip
 mkdir -p "$HOME/.local/bin"
 mv 3dsg "$HOME/.local/bin/"
 3dsg --version
@@ -106,7 +106,7 @@ Prerequisites:
 Create a signed and notarized GitHub release:
 
 ```sh
-VERSION=0.1.0 \
+VERSION=0.1.1 \
 CODESIGN_IDENTITY="Developer ID Application: ..." \
 NOTARYTOOL_PROFILE=3dsg-notarytool \
 scripts/release-macos.sh
@@ -121,7 +121,7 @@ scripts/release-macos.sh --help
 If the repository cannot be inferred from git remotes, pass it explicitly:
 
 ```sh
-VERSION=0.1.0 \
+VERSION=0.1.1 \
 CODESIGN_IDENTITY="Developer ID Application: ..." \
 NOTARYTOOL_PROFILE=3dsg-notarytool \
 GH_REPO=benmcdowell/3dsg \
